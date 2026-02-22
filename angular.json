@@ -71,7 +71,8 @@
               "extractLicenses": false,
               "sourceMap": true
             }
-          }
+          },
+          "defaultConfiguration": "production"
         },
         "build-e2e-coverage": {
           "builder": "edict-e2e-coverage-builder:application-with-e2e-coverage",
