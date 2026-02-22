@@ -1,0 +1,10 @@
+{
+  "$schema": "../../node_modules/@angular-devkit/architect/src/builders-schema.json",
+  "builders": {
+    "application-with-e2e-coverage": {
+      "implementation": "./application-with-e2e-coverage.cjs",
+      "schema": "./schema.json",
+      "description": "Application build with optional coverage instrumentation for e2e (when CYPRESS_COVERAGE=1)"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "edict-e2e-coverage-builder",
+  "version": "1.0.0",
+  "private": true,
+  "builders": "./builders.json"
+}

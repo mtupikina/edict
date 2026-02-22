@@ -1,0 +1,102 @@
+@if (!word() && !showAddForm()) {
+  <button z-button type="button" (click)="openAdd()" zSize="lg" data-testid="add-word-button">
+    <z-icon zType="plus" class="w-5 h-5" />
+    Add word
+  </button>
+} @else if (word() || showAddForm()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+    (click)="close()"
+    (keydown.escape)="close()"
+    role="dialog"
+    tabindex="-1"
+    aria-modal="true"
+    data-testid="word-dialog"
+  >
+    <div
+      class="rounded-2xl overflow-hidden shadow-xl max-w-lg w-full max-h-[90vh] bg-background"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="$event.stopPropagation()"
+      tabindex="-1"
+    >
+      <div class="dialog-scroll h-full max-h-[90vh] overflow-y-auto p-6 [scrollbar-gutter:stable]">
+        <h2 class="text-xl font-semibold text-slate-800 mb-4" data-testid="word-dialog-title">{{ word() ? 'Edit word' : 'Add word' }}</h2>
+
+        <form [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
+          @if (error()) {
+            <p class="text-red-600 text-sm">{{ error() }}</p>
+          }
+          <div>
+            <label for="word-form-word" class="block text-sm font-medium text-slate-700 mb-1">Word *</label>
+            <input #wordInputRef id="word-form-word" z-input type="text" formControlName="word" class="w-full" required [zStatus]="isControlInvalidAndTouched('word') ? 'error' : undefined" />
+            @if (getControlError('word'); as err) {
+              <p class="text-destructive text-sm mt-1">{{ err }}</p>
+            }
+          </div>
+          <div>
+            <label for="word-form-translation" class="block text-sm font-medium text-slate-700 mb-1">Translation</label>
+            <input id="word-form-translation" z-input type="text" formControlName="translation" class="w-full" />
+          </div>
+          <div>
+            <label for="word-form-partOfSpeech" class="block text-sm font-medium text-slate-700 mb-1">Part of speech</label>
+            <z-select id="word-form-partOfSpeech" formControlName="partOfSpeech" zPlaceholder="—" class="w-full">
+              <z-select-item [zValue]="''">—</z-select-item>
+              @for (opt of partOfSpeechOptions; track opt) {
+                <z-select-item [zValue]="opt">{{ opt }}</z-select-item>
+              }
+            </z-select>
+            @if (getControlError('partOfSpeech'); as err) {
+              <p class="text-destructive text-sm mt-1">{{ err }}</p>
+            }
+          </div>
+          <div>
+            <label for="word-form-transcription" class="block text-sm font-medium text-slate-700 mb-1">Transcription</label>
+            <input id="word-form-transcription" z-input type="text" formControlName="transcription" class="w-full" placeholder="e.g. /ˈwɜːd/" />
+          </div>
+          <div>
+            <label for="word-form-description" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+            <textarea id="word-form-description" z-input formControlName="description" rows="2" class="w-full"></textarea>
+          </div>
+          <div>
+            <label for="word-form-synonymsText" class="block text-sm font-medium text-slate-700 mb-1">Synonyms</label>
+            <input id="word-form-synonymsText" z-input type="text" formControlName="synonymsText" class="w-full" placeholder="Comma-separated" />
+          </div>
+          <div>
+            <label for="word-form-antonymsText" class="block text-sm font-medium text-slate-700 mb-1">Antonyms</label>
+            <input id="word-form-antonymsText" z-input type="text" formControlName="antonymsText" class="w-full" placeholder="Comma-separated" />
+          </div>
+          <div>
+            <label for="word-form-examplesText" class="block text-sm font-medium text-slate-700 mb-1">Examples</label>
+            <textarea id="word-form-examplesText" z-input formControlName="examplesText" rows="3" class="w-full" placeholder="One per line"></textarea>
+          </div>
+          <div>
+            <label for="word-form-tagsText" class="block text-sm font-medium text-slate-700 mb-1">Tags</label>
+            <input id="word-form-tagsText" z-input type="text" formControlName="tagsText" class="w-full" placeholder="Comma-separated" />
+          </div>
+          @if (showPluralField) {
+            <div>
+              <label for="word-form-plural" class="block text-sm font-medium text-slate-700 mb-1">Plural</label>
+              <input id="word-form-plural" z-input type="text" formControlName="plural" class="w-full" />
+            </div>
+          }
+          @if (showVerbFormsField) {
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="word-form-simplePast" class="block text-sm font-medium text-slate-700 mb-1">Simple past</label>
+                <input id="word-form-simplePast" z-input type="text" formControlName="simplePast" class="w-full" />
+              </div>
+              <div>
+                <label for="word-form-pastParticiple" class="block text-sm font-medium text-slate-700 mb-1">Past participle</label>
+                <input id="word-form-pastParticiple" z-input type="text" formControlName="pastParticiple" class="w-full" />
+              </div>
+            </div>
+          }
+          <div class="flex gap-2 justify-end pt-2">
+            <button z-button type="button" (click)="close()" zType="outline" class="min-h-9 min-w-[5.5rem]">Cancel</button>
+            <button z-button type="submit" [zDisabled]="submitting()" class="min-h-9 min-w-[5.5rem]">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}

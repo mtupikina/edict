@@ -1,0 +1,19 @@
+<header class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+    <a routerLink="/words" class="flex items-center gap-2 shrink-0">
+      <img src="assets/logo.png" alt="E-Dictionary" class="w-9 h-9 rounded-lg object-contain" width="36" height="36" />
+
+      <span class="font-bold text-slate-800 text-lg hidden sm:inline">E-Dictionary</span>
+    </a>
+
+    <div class="flex items-center gap-3">
+      <span class="text-sm text-slate-600 truncate max-w-[140px] sm:max-w-[200px]" [title]="user()?.email ?? ''">
+        {{ displayName }}
+      </span>
+
+      <button z-button type="button" (click)="logout()" zType="ghost" zSize="icon" title="Log out">
+        <z-icon zType="log-out" class="w-5 h-5" />
+      </button>
+    </div>
+  </div>
+</header>

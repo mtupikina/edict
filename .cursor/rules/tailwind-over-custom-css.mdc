@@ -1,0 +1,12 @@
+---
+description: Prefer Tailwind utility classes; use custom CSS only as a last resort
+globs: "**/*.{html,scss,css,ts}"
+alwaysApply: false
+---
+
+# Tailwind Over Custom CSS
+
+- **Use Tailwind classes first:** Style the app with Tailwind utility classes in templates (and in `class` / `host` in components). The goal of using Tailwind is to avoid custom CSS.
+- **Custom CSS last resort:** Add custom CSS (e.g. in `styles.scss` or component styles) only when there is no Tailwind (or plugin) option—e.g. a one-off layout or effect that cannot be expressed with utilities or arbitrary values.
+- **No duplicate utilities:** Do not reimplement Tailwind-like utilities by hand in SCSS/CSS; use the real Tailwind build instead.
+- **Component styles:** Prefer `host: { class: '...' }` and template classes over component-specific stylesheets. Add a component stylesheet only when necessary for something that cannot be done with Tailwind.

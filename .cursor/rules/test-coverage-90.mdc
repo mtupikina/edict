@@ -1,0 +1,14 @@
+---
+description: Keep test coverage at least 90%
+globs: "**/*.ts"
+alwaysApply: false
+---
+
+# Test Coverage (>= 90%)
+
+- **Minimum coverage:** Statements, branches, functions, and lines must each be **at least 90%** for the application source (excluding `environments`, `main.ts`, and test files).
+- **Unit tests:** Every service, guard, and component with business logic must have a `.spec.ts` that tests behavior (not only "should create"). Mock HTTP and Router where needed.
+- **E2E (Cypress):** E2E tests must cover **business logic and critical user flows** (e.g. auth redirect, login, protected routes, list/CRUD flows), not only static text on the page.
+- **All new code** must be covered by tests; **code cannot be committed** unless coverage stays >= 90% (see commit-gate-tests-and-lint).
+- **CI:** Run coverage and fail the build if coverage drops below 90%.
+- When adding or changing features, add or update specs and e2e so coverage stays >= 90%.

@@ -1,0 +1,58 @@
+<div class="max-w-4xl mx-auto">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-bold text-foreground">Words</h1>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="flex items-center gap-2 shrink-0">
+        <label for="words-sort" class="text-sm font-medium text-foreground whitespace-nowrap">Sort by</label>
+        <z-select
+          id="words-sort"
+          [ngModel]="sortBy() + ':' + order()"
+          (ngModelChange)="onSortChange($event)"
+          zPlaceholder="Sort by"
+          class="min-w-[13rem] [&_button_span]:flex-nowrap [&_button_span]:whitespace-nowrap"
+        >
+          @for (opt of sortOptions; track opt.label) {
+            <z-select-item [zValue]="opt.sortBy + ':' + opt.order">{{ opt.label }}</z-select-item>
+          }
+        </z-select>
+      </div>
+
+      <app-word-form-dialog (saved)="onWordSaved($event)" />
+    </div>
+  </div>
+
+  @if (error()) {
+    <p class="text-red-600 mb-4">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="text-muted-foreground">Loading words...</p>
+  } @else if (words().length === 0) {
+    <p class="text-muted-foreground">No words yet. Add one to get started.</p>
+  } @else {
+    <ul class="space-y-2">
+      @for (w of words(); track w._id) {
+        <li>
+          <app-word-list-item
+            [word]="w"
+            (deleted)="onWordDeleted(w._id)"
+            (edited)="onWordSaved($event)"
+          />
+        </li>
+      }
+    </ul>
+    @if (nextCursor() && !loadingMore()) {
+      <button
+        type="button"
+        (click)="onScroll()"
+        class="mt-6 w-full py-3 text-muted-foreground hover:bg-muted rounded-xl transition-colors"
+      >
+        Load more
+      </button>
+    }
+    @if (loadingMore()) {
+      <p class="mt-4 text-muted-foreground text-center">Loading more...</p>
+    }
+  }
+</div>

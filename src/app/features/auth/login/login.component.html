@@ -1,0 +1,26 @@
+<div class="min-h-screen flex flex-col items-center justify-center justify-self-center p-4 w-full max-w-sm">
+  <div
+    class="flex flex-col items-center gap-5 p-8 bg-white rounded-2xl shadow-md border border-slate-200/60 w-full"
+  >
+    <img
+      src="assets/logo.png"
+      alt="E-Dictionary"
+      class="w-20 h-20 rounded-2xl object-contain text-teal-600"
+      width="80"
+      height="80"
+    />
+
+    <h1 class="text-2xl font-bold text-slate-800 tracking-tight">E-Dictionary</h1>
+
+    @if (showAccessDenied()) {
+      <p class="text-sm text-red-600 text-center w-full">
+        Access denied. Only authorized users can sign in.
+      </p>
+    }
+
+    <button z-button type="button" (click)="login()" zFull zSize="lg" class="w-full">
+      <z-icon zType="arrow-right" class="w-5 h-5" />
+      Login with Google
+    </button>
+  </div>
+</div>

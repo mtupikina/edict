@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "types": ["cypress"],
+    "noEmit": true,
+    "noPropertyAccessFromIndexSignature": false
+  },
+  "include": ["cypress/**/*.ts"]
+}

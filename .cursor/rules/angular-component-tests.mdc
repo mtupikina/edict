@@ -1,0 +1,32 @@
+---
+description: Every Angular component must have a co-located spec file with tests
+globs: "**/*.component.ts"
+alwaysApply: false
+---
+
+# Angular: Component Tests Required
+
+Every Angular component must have a corresponding **`.spec.ts`** test file in the same directory as the component.
+
+## Rule
+
+- For each **`*.component.ts`** file, there must be a **`*.component.spec.ts`** file next to it.
+- The spec file must contain at least one test (e.g. "should create") and should cover the component's main behaviour.
+- When **creating a new component**, create the spec file at the same time; do not leave components without tests.
+
+## File layout
+
+```
+core/components/app-nav/
+  app-nav.component.ts
+  app-nav.component.html
+  app-nav.component.spec.ts   <- required
+```
+
+## Checklist
+
+- [ ] New component created -> create `*.component.spec.ts` in the same folder.
+- [ ] Spec imports the component and uses `TestBed` to compile and create it.
+- [ ] At least one test (e.g. `it('should create', () => { ... })`) and tests for important behaviour (e.g. user actions, inputs, outputs).
+
+Apply this to all components. If you add a new component, add its spec file in the same step.

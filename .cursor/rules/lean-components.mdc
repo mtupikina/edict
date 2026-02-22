@@ -1,0 +1,27 @@
+---
+description: Angular components should be lean; extract large templates and logic into smaller components
+globs: "**/*.component.ts"
+alwaysApply: false
+---
+
+# Lean Components
+
+Keep Angular components **lean**: small templates, focused responsibility, and minimal inline logic.
+
+## Rules
+
+- **Templates**: If a component template grows large (e.g. > ~80–100 lines), extract logical sections into child components (e.g. tables, dialogs, forms).
+- **Single responsibility**: Prefer one main concern per component. Use presentational child components with `input()` / `output()` and let the parent own state and services.
+- **Containers vs presentational**: Split "smart" (container) components that load data and handle actions from "dumb" (presentational) components that receive data and emit events.
+
+## Examples
+
+- **Large page with tabs**: Move each tab's content into its own component (e.g. `roles-table`, `permissions-table`).
+- **Dialogs**: Put each dialog (form + footer) in its own component; parent controls visibility and handles save/cancel.
+- **Long forms or tables**: Extract the form or table into a dedicated component with clear inputs/outputs.
+
+## Outcome
+
+- Main component template stays short and readable.
+- Child components are easier to test and reuse.
+- Changes are localized to the right file.

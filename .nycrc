@@ -1,0 +1,8 @@
+{
+  "sourceMap": true,
+  "instrument": false,
+  "report-dir": "coverage/combined",
+  "reporter": ["html", "text-summary"],
+  "include": ["src/**/*.ts"],
+  "exclude": ["**/*.spec.ts", "**/*.cy.ts", "cypress/**", "node_modules/**"]
+}
