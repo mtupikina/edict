@@ -6,6 +6,7 @@
     "lint": "ng lint",
     "start": "ng serve",
     "build": "ng build",
+    "build:prod": "node scripts/write-env.js && ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:ci": "ng test --watch=false --browsers=ChromeHeadless",
