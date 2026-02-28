@@ -26,11 +26,32 @@
           @if (error()) {
             <p class="text-red-600 text-sm">{{ error() }}</p>
           }
-          <div>
+          <div class="relative">
             <label for="word-form-word" class="block text-sm font-medium text-slate-700 mb-1">Word *</label>
-            <input #wordInputRef id="word-form-word" z-input type="text" formControlName="word" class="w-full" required [zStatus]="isControlInvalidAndTouched('word') ? 'error' : undefined" />
+            <input #wordInputRef id="word-form-word" z-input type="text" formControlName="word" class="w-full" required [zStatus]="isControlInvalidAndTouched('word') ? 'error' : undefined" (focus)="onWordInputFocus()" />
             @if (getControlError('word'); as err) {
               <p class="text-destructive text-sm mt-1">{{ err }}</p>
+            }
+            @if (searchHints().length > 0) {
+              <div
+                class="absolute left-0 right-0 top-full z-10 mt-1 max-h-52 overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-lg scrollbar-hide"
+                role="listbox"
+                aria-label="Existing word matches"
+                data-testid="word-form-search-hints"
+              >
+                <div class="p-1">
+                  @for (hint of searchHints(); track hint._id) {
+                    <div
+                      class="relative flex min-w-full cursor-default items-center gap-2 rounded-sm py-2 px-3 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <span class="font-medium">{{ hint.word }}</span>
+                      @if (hint.translation) {
+                        <span class="text-muted-foreground truncate">— {{ hint.translation }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
             }
           </div>
           <div>

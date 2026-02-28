@@ -11,7 +11,8 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs';
 
 import { ZardButtonComponent } from '@/shared/components/button';
 import { ZardIconComponent } from '@/shared/components/icon';
@@ -61,6 +62,10 @@ export class WordFormDialogComponent {
   protected showAddForm = signal(false);
   protected submitting = signal(false);
   protected error = signal<string | null>(null);
+  /** Up to 7 existing words matching the word input (for duplicate hint). Empty when no search or no matches. */
+  protected searchHints = signal<Word[]>([]);
+  /** True after the user has focused the word input; prevents search from firing on dialog open (e.g. edit mode patch). */
+  private wordInputTouched = signal(false);
 
   /** Form model is the source of truth (reactive forms). */
   protected form: FormGroup<WordFormControls> = this.buildForm();
@@ -103,9 +108,36 @@ export class WordFormDialogComponent {
       const currentId = w?._id ?? null;
       if (currentId !== lastSyncedId) {
         lastSyncedId = currentId;
+        this.wordInputTouched.set(false);
         if (w) this.form.patchValue(wordToFormValue(w));
       }
     });
+
+    this.form
+      .get('word')
+      ?.valueChanges.pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((term: string) => {
+          if (!this.wordInputTouched()) return of([]);
+          const t = term?.trim();
+          if (!t || t.length < 2) return of([]);
+          return this.wordsService
+            .getPage(7, undefined, 'word', 'asc', t)
+            .pipe(
+              map((page) => page.items),
+              catchError(() => of([])),
+            );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((items) => {
+        const current = this.word();
+        const filtered = current
+          ? items.filter((w) => w._id !== current._id)
+          : items;
+        this.searchHints.set(filtered);
+      });
   }
 
   private buildForm(): FormGroup<WordFormControls> {
@@ -129,7 +161,13 @@ export class WordFormDialogComponent {
   protected openAdd(): void {
     this.form.reset(DEFAULT_FORM_VALUE);
     this.error.set(null);
+    this.searchHints.set([]);
+    this.wordInputTouched.set(false);
     this.showAddForm.set(true);
+  }
+
+  protected onWordInputFocus(): void {
+    this.wordInputTouched.set(true);
   }
 
   protected close(): void {

@@ -1,5 +1,5 @@
 import type { FormGroup } from '@angular/forms';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import type { Signal } from '@angular/core';
 
@@ -12,8 +12,10 @@ import { WordFormDialogComponent } from './word-form-dialog.component';
 interface WordFormDialogTestHarness {
   showAddForm: Signal<boolean> & { set: (v: boolean) => void };
   error: Signal<string | null> & { set: (v: string | null) => void };
+  searchHints: Signal<Word[]>;
   form: FormGroup;
   openAdd(): void;
+  onWordInputFocus(): void;
   close(): void;
   save(): void;
   getControlError(controlName: keyof WordFormValue): string | null;
@@ -30,9 +32,12 @@ describe('WordFormDialogComponent', () => {
   let wordsService: jasmine.SpyObj<WordsService>;
 
   beforeEach(async () => {
-    wordsService = jasmine.createSpyObj('WordsService', ['create', 'update']);
+    wordsService = jasmine.createSpyObj('WordsService', ['create', 'update', 'getPage']);
     wordsService.create.and.returnValue(of({ _id: '1', word: 'new' } as Word));
     wordsService.update.and.returnValue(of({ _id: '1', word: 'updated' } as Word));
+    wordsService.getPage.and.returnValue(
+      of({ items: [], nextCursor: null, hasMore: false, totalCount: 0 }),
+    );
     await TestBed.configureTestingModule({
       imports: [WordFormDialogComponent],
       providers: [{ provide: WordsService, useValue: wordsService }],
@@ -50,7 +55,67 @@ describe('WordFormDialogComponent', () => {
     harness(fixture.componentInstance).openAdd();
     expect(harness(fixture.componentInstance).showAddForm()).toBe(true);
     expect(harness(fixture.componentInstance).error()).toBeNull();
+    expect(harness(fixture.componentInstance).searchHints()).toEqual([]);
   });
+
+  it('should debounce word input and show up to 7 search hints from backend', fakeAsync(() => {
+    const matchingWords: Word[] = [
+      { _id: '1', word: 'hello', translation: 'ahoj' },
+      { _id: '2', word: 'hell', translation: 'peklo' },
+    ];
+    wordsService.getPage.and.returnValue(
+      of({
+        items: matchingWords,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 2,
+      }),
+    );
+    harness(fixture.componentInstance).openAdd();
+    fixture.detectChanges();
+    harness(fixture.componentInstance).onWordInputFocus();
+    harness(fixture.componentInstance).form.patchValue({ word: 'hel' });
+    expect(wordsService.getPage).not.toHaveBeenCalled();
+    tick(300);
+    expect(wordsService.getPage).toHaveBeenCalledWith(
+      7,
+      undefined,
+      'word',
+      'asc',
+      'hel',
+    );
+    fixture.detectChanges();
+    expect(harness(fixture.componentInstance).searchHints()).toEqual(matchingWords);
+  }));
+
+  it('should filter out current word from search hints in edit mode', fakeAsync(() => {
+    const existing: Word = { _id: '99', word: 'hello', translation: 'ahoj' };
+    const other: Word = { _id: '2', word: 'hell', translation: 'peklo' };
+    wordsService.getPage.and.returnValue(
+      of({
+        items: [existing, other],
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 2,
+      }),
+    );
+    fixture.componentRef.setInput('word', existing);
+    fixture.detectChanges();
+    harness(fixture.componentInstance).onWordInputFocus();
+    harness(fixture.componentInstance).form.patchValue({ word: 'hel' });
+    tick(300);
+    fixture.detectChanges();
+    expect(harness(fixture.componentInstance).searchHints()).toEqual([other]);
+  }));
+
+  it('should not fire search when word input has not been focused', fakeAsync(() => {
+    harness(fixture.componentInstance).openAdd();
+    fixture.detectChanges();
+    harness(fixture.componentInstance).form.patchValue({ word: 'hel' });
+    tick(300);
+    expect(wordsService.getPage).not.toHaveBeenCalled();
+    expect(harness(fixture.componentInstance).searchHints()).toEqual([]);
+  }));
 
   it('close should hide add form and emit dialogCancel', () => {
     let cancelled = false;
