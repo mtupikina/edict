@@ -4,9 +4,9 @@
  * Intercepts must target the API host (localhost:3001) only, so the app's /words document request returns HTML.
  */
 const API_WORDS = 'http://localhost:3001/words*';
-const emptyPage = { items: [], nextCursor: null, hasMore: false };
+const emptyPage = { items: [], nextCursor: null, hasMore: false, totalCount: 0 };
 
-function stubGetWords(response: { items: object[]; nextCursor: string | null; hasMore: boolean }) {
+function stubGetWords(response: { items: object[]; nextCursor: string | null; hasMore: boolean; totalCount: number }) {
   return cy.intercept('GET', API_WORDS, response).as('getWords');
 }
 
@@ -22,7 +22,6 @@ describe('Words', () => {
       cy.visit('/words');
       cy.wait('@getWords');
       cy.url().should('include', '/words');
-      cy.contains('Words').should('be.visible');
       cy.contains('No words yet. Add one to get started.').should('be.visible');
     });
 
@@ -31,11 +30,10 @@ describe('Words', () => {
         { _id: '1', word: 'hello', translation: 'hola', partOfSpeech: 'interj' },
         { _id: '2', word: 'world', translation: 'mundo' },
       ];
-      stubGetWords({ items, nextCursor: null, hasMore: false });
+      stubGetWords({ items, nextCursor: null, hasMore: false, totalCount: items.length });
       cy.login();
       cy.visit('/words');
       cy.wait('@getWords');
-      cy.contains('Words').should('be.visible');
       cy.contains('hello').should('be.visible');
       cy.contains('hola').should('be.visible');
       cy.contains('world').should('be.visible');
@@ -84,7 +82,7 @@ describe('Words', () => {
   describe('edit word', () => {
     it('opens edit form and saves changes', () => {
       const items = [{ _id: 'edit-1', word: 'foo', translation: 'bar' }];
-      stubGetWords({ items, nextCursor: null, hasMore: false });
+      stubGetWords({ items, nextCursor: null, hasMore: false, totalCount: 1 });
       cy.intercept('PATCH', 'http://localhost:3001/words/edit-1', (req) => {
         req.reply({ body: { _id: 'edit-1', word: 'foo updated', translation: 'bar' } });
       }).as('patchWord');
@@ -103,7 +101,7 @@ describe('Words', () => {
   describe('delete word', () => {
     it('confirms and deletes word', () => {
       const items = [{ _id: 'del-1', word: 'remove', translation: 'eliminar' }];
-      stubGetWords({ items, nextCursor: null, hasMore: false });
+      stubGetWords({ items, nextCursor: null, hasMore: false, totalCount: 1 });
       cy.intercept('DELETE', 'http://localhost:3001/words/del-1', { statusCode: 200, body: { message: 'Deleted' } }).as('deleteWord');
       cy.login();
       cy.visit('/words');

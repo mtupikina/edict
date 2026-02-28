@@ -1,7 +1,5 @@
 <div class="max-w-4xl mx-auto flex flex-col min-h-[calc(100vh-6rem)]">
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 shrink-0">
-    <h1 class="text-2xl font-bold text-foreground">Words</h1>
-
     <div class="flex flex-wrap items-center gap-3">
       <div class="flex items-center gap-2 shrink-0">
         <label for="words-sort" class="text-sm font-medium text-foreground whitespace-nowrap">Sort by</label>
@@ -18,12 +16,30 @@
         </z-select>
       </div>
 
-      <app-word-form-dialog
-        [word]="editingWord()"
-        (saved)="onWordSaved($event)"
-        (dialogCancel)="onDialogCancel()"
-      />
+      <div class="flex items-center gap-2 shrink-0">
+        <input
+          id="words-search"
+          z-input
+          type="text"
+          [ngModel]="search()"
+          (ngModelChange)="onSearchChange($event)"
+          placeholder="Search by word"
+          class="min-w-[12rem]"
+        />
+
+        @if (totalCount() !== null) {
+          <p class="text-sm text-muted-foreground shrink-0">
+            {{ totalCount() }} word{{ totalCount() === 1 ? '' : 's' }}
+          </p>
+        }
+      </div>
     </div>
+
+    <app-word-form-dialog
+      [word]="editingWord()"
+      (saved)="onWordSaved($event)"
+      (dialogCancel)="onDialogCancel()"
+    />
   </div>
 
   @if (error()) {

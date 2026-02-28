@@ -16,11 +16,13 @@ export class WordsService {
     cursor?: string,
     sortBy: 'word' | 'translation' | 'createdAt' = 'createdAt',
     order: 'asc' | 'desc' = 'desc',
+    search?: string,
   ): Observable<WordsPage> {
     const params: Record<string, string> = {
       limit: String(limit),
       sortBy,
       order,
+      search: search?.trim() ?? '',
     };
     if (cursor) params['cursor'] = cursor;
     return this.http.get<WordsPage>(BASE, { params });

@@ -20,19 +20,19 @@ describe('Auth', () => {
   });
 
   it('redirects logged-in user from / to /words', () => {
-    cy.intercept('GET', '**/words*', { items: [], nextCursor: null, hasMore: false }).as('getWords');
+    cy.intercept('GET', '**/words*', { items: [], nextCursor: null, hasMore: false, totalCount: 0 }).as('getWords');
     cy.login();
     cy.visit('/');
     cy.url().should('include', '/words');
-    cy.contains('Words').should('be.visible');
+    cy.get('label[for="words-sort"]').should('be.visible');
   });
 
   it('auth callback with token redirects to /words and stores token', () => {
     cy.intercept('GET', '**/auth/me', { statusCode: 200 }).as('authMe');
-    cy.intercept('GET', '**/words*', { items: [], nextCursor: null, hasMore: false }).as('getWords');
+    cy.intercept('GET', '**/words*', { items: [], nextCursor: null, hasMore: false, totalCount: 0 }).as('getWords');
     cy.visit('/auth/callback?token=e2e-callback-token');
     cy.url().should('include', '/words');
-    cy.contains('Words').should('be.visible');
+    cy.get('label[for="words-sort"]').should('be.visible');
     // Wait for words request so callback has run and auth is applied
     cy.wait('@getWords');
     cy.window().its('localStorage').invoke('getItem', 'edict_token').should('eq', 'e2e-callback-token');

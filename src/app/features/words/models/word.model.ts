@@ -40,4 +40,5 @@ export interface WordsPage {
   items: Word[];
   nextCursor: string | null;
   hasMore: boolean;
+  totalCount: number;
 }

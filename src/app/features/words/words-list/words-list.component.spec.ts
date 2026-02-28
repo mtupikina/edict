@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 
 import { Word } from '../models/word.model';
@@ -12,9 +12,12 @@ type WordsListTestHarness = WordsListComponent & {
   error: () => string | null;
   sortBy: () => string;
   order: () => string;
+  search: () => string & { set: (v: string) => void };
+  totalCount: () => number | null & { set: (v: number | null) => void };
   loadingMore: () => boolean & { set: (v: boolean) => void };
   setSort: (sortBy: string, order: string) => void;
   onSortChange: (value: string) => void;
+  onSearchChange: (value: string) => void;
   loadMore: () => void;
   onScrolledIndexChange: () => void;
   trackByWordId: (index: number, word: Word) => string;
@@ -30,7 +33,7 @@ describe('WordsListComponent', () => {
 
   beforeEach(async () => {
     wordsService = jasmine.createSpyObj('WordsService', ['getPage']);
-    wordsService.getPage.and.returnValue(of({ items: [], nextCursor: null, hasMore: false }));
+    wordsService.getPage.and.returnValue(of({ items: [], nextCursor: null, hasMore: false, totalCount: 0 }));
     await TestBed.configureTestingModule({
       imports: [WordsListComponent],
       providers: [{ provide: WordsService, useValue: wordsService }],
@@ -44,12 +47,12 @@ describe('WordsListComponent', () => {
   });
 
   it('should load first page on init', () => {
-    expect(wordsService.getPage).toHaveBeenCalledWith(20, undefined, 'createdAt', 'desc');
+    expect(wordsService.getPage).toHaveBeenCalledWith(20, undefined, 'createdAt', 'desc', undefined);
   });
 
   it('should set words and nextCursor on successful load', () => {
     const items: Word[] = [{ _id: '1', word: 'a' }];
-    wordsService.getPage.and.returnValue(of({ items, nextCursor: 'c2', hasMore: true }));
+    wordsService.getPage.and.returnValue(of({ items, nextCursor: 'c2', hasMore: true, totalCount: 1 }));
     fixture = TestBed.createComponent(WordsListComponent);
     fixture.detectChanges();
     const comp = listHarness(fixture.componentInstance);
@@ -77,13 +80,13 @@ describe('WordsListComponent', () => {
     const comp = listHarness(fixture.componentInstance);
     expect(comp.sortBy()).toBe('word');
     expect(comp.order()).toBe('asc');
-    expect(wordsService.getPage).toHaveBeenCalledWith(20, undefined, 'word', 'asc');
+    expect(wordsService.getPage).toHaveBeenCalledWith(20, undefined, 'word', 'asc', undefined);
   });
 
   it('onSortChange should parse value and setSort', () => {
     wordsService.getPage.calls.reset();
     listHarness(fixture.componentInstance).onSortChange('word:asc');
-    expect(wordsService.getPage).toHaveBeenCalledWith(20, undefined, 'word', 'asc');
+    expect(wordsService.getPage).toHaveBeenCalledWith(20, undefined, 'word', 'asc', undefined);
   });
 
   it('onSortChange should not setSort when value is invalid', () => {
@@ -101,7 +104,7 @@ describe('WordsListComponent', () => {
   });
 
   it('loadMore should not call getPage when already loading more', () => {
-    wordsService.getPage.and.returnValue(of({ items: [], nextCursor: null, hasMore: false }));
+    wordsService.getPage.and.returnValue(of({ items: [], nextCursor: null, hasMore: false, totalCount: 0 }));
     listHarness(fixture.componentInstance).nextCursor.set('c');
     listHarness(fixture.componentInstance).loadingMore.set(true);
     wordsService.getPage.calls.reset();
@@ -111,8 +114,8 @@ describe('WordsListComponent', () => {
 
   it('loadMore should append page when cursor exists', () => {
     wordsService.getPage.and.returnValues(
-      of({ items: [{ _id: '1', word: 'a' }], nextCursor: 'c2', hasMore: true }),
-      of({ items: [{ _id: '2', word: 'b' }], nextCursor: null, hasMore: false }),
+      of({ items: [{ _id: '1', word: 'a' }], nextCursor: 'c2', hasMore: true, totalCount: 2 }),
+      of({ items: [{ _id: '2', word: 'b' }], nextCursor: null, hasMore: false, totalCount: 2 }),
     );
     fixture = TestBed.createComponent(WordsListComponent);
     fixture.detectChanges();
@@ -145,7 +148,7 @@ describe('WordsListComponent', () => {
 
   it('onScrolledIndexChange should call loadMore when viewport range end is near list end', () => {
     const items = Array.from({ length: 20 }, (_, i) => ({ _id: String(i), word: `w${i}` } as Word));
-    wordsService.getPage.and.returnValue(of({ items, nextCursor: 'cursor', hasMore: true }));
+    wordsService.getPage.and.returnValue(of({ items, nextCursor: 'cursor', hasMore: true, totalCount: 20 }));
     fixture = TestBed.createComponent(WordsListComponent);
     fixture.detectChanges();
     const comp = listHarness(fixture.componentInstance);
@@ -157,7 +160,7 @@ describe('WordsListComponent', () => {
       getRenderedRange: () => ({ start: 0, end: 18 }),
     };
     comp.onScrolledIndexChange();
-    expect(wordsService.getPage).toHaveBeenCalledWith(20, 'cursor', 'createdAt', 'desc');
+    expect(wordsService.getPage).toHaveBeenCalledWith(20, 'cursor', 'createdAt', 'desc', undefined);
   });
 
   it('onScrolledIndexChange should not call loadMore when viewportRef is undefined', () => {
@@ -171,5 +174,22 @@ describe('WordsListComponent', () => {
   it('trackByWordId should return word _id', () => {
     const word = { _id: 'id1', word: 'test' } as Word;
     expect(listHarness(fixture.componentInstance).trackByWordId(0, word)).toBe('id1');
+  });
+
+  it('onSearchChange should set search and reload first page after debounce', fakeAsync(() => {
+    wordsService.getPage.calls.reset();
+    listHarness(fixture.componentInstance).onSearchChange('hello');
+    expect(listHarness(fixture.componentInstance).search()).toBe('hello');
+    expect(wordsService.getPage).not.toHaveBeenCalled();
+    tick(300);
+    expect(wordsService.getPage).toHaveBeenCalledWith(20, undefined, 'createdAt', 'desc', 'hello');
+  }));
+
+  it('loadFirst should pass trimmed search to getPage', () => {
+    wordsService.getPage.and.returnValue(of({ items: [], nextCursor: null, hasMore: false, totalCount: 0 }));
+    listHarness(fixture.componentInstance).search.set('  bar  ');
+    wordsService.getPage.calls.reset();
+    fixture.componentInstance.loadFirst();
+    expect(wordsService.getPage).toHaveBeenCalledWith(20, undefined, 'createdAt', 'desc', 'bar');
   });
 });

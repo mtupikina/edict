@@ -30,11 +30,12 @@ describe('WordsService', () => {
   });
 
   it('getPage should request with default params', () => {
-    const page: WordsPage = { items: [], nextCursor: null, hasMore: false };
+    const page: WordsPage = { items: [], nextCursor: null, hasMore: false, totalCount: 0 };
     service.getPage().subscribe((data) => expect(data).toEqual(page));
     const req = httpMock.expectOne((r) => r.url === BASE && r.params.get('limit') === '20');
     expect(req.request.params.get('sortBy')).toBe('createdAt');
     expect(req.request.params.get('order')).toBe('desc');
+    expect(req.request.params.get('search')).toBe('');
     req.flush(page);
   });
 
@@ -44,7 +45,21 @@ describe('WordsService', () => {
     expect(req.request.params.get('limit')).toBe('10');
     expect(req.request.params.get('sortBy')).toBe('word');
     expect(req.request.params.get('order')).toBe('asc');
-    req.flush({ items: [], nextCursor: null, hasMore: false });
+    req.flush({ items: [], nextCursor: null, hasMore: false, totalCount: 0 });
+  });
+
+  it('getPage should include search param when provided', () => {
+    service.getPage(20, undefined, 'createdAt', 'desc', 'hello').subscribe();
+    const req = httpMock.expectOne((r) => r.url === BASE && r.params.get('search') === 'hello');
+    expect(req.request.params.get('search')).toBe('hello');
+    req.flush({ items: [], nextCursor: null, hasMore: false, totalCount: 0 });
+  });
+
+  it('getPage should send empty search param when search is empty or whitespace', () => {
+    service.getPage(20, undefined, 'createdAt', 'desc', '  ').subscribe();
+    const req = httpMock.expectOne((r) => r.url.startsWith(BASE) && r.params.get('search') === '');
+    expect(req.request.params.get('search')).toBe('');
+    req.flush({ items: [], nextCursor: null, hasMore: false, totalCount: 0 });
   });
 
   it('getOne should GET word by id', () => {

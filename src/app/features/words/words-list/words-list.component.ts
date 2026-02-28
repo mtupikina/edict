@@ -1,7 +1,11 @@
-import { Component, inject, signal, OnInit, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+import { Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
+import { ZardInputDirective } from '@/shared/components/input';
 import { ZardSelectImports } from '@/shared/components/select/select.imports';
 
 import { WordsService } from '../services/words.service';
@@ -15,7 +19,7 @@ type OrderOption = 'asc' | 'desc';
 @Component({
   selector: 'app-words-list',
   standalone: true,
-  imports: [FormsModule, ScrollingModule, ZardSelectImports, WordFormDialogComponent, WordListItemComponent],
+  imports: [FormsModule, ScrollingModule, ZardInputDirective, ZardSelectImports, WordFormDialogComponent, WordListItemComponent],
   templateUrl: './words-list.component.html',
   host: { class: 'block' },
 })
@@ -23,14 +27,19 @@ export class WordsListComponent implements OnInit {
   @ViewChild(CdkVirtualScrollViewport) private readonly viewportRef?: CdkVirtualScrollViewport;
 
   private readonly wordsService = inject(WordsService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly searchTrigger$ = new Subject<void>();
+
   protected readonly words = signal<Word[]>([]);
   protected readonly nextCursor = signal<string | null>(null);
+  protected readonly totalCount = signal<number | null>(null);
   protected readonly editingWord = signal<Word | null>(null);
   protected readonly loading = signal(false);
   protected readonly loadingMore = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly sortBy = signal<SortByOption>('createdAt');
   protected readonly order = signal<OrderOption>('desc');
+  protected readonly search = signal('');
 
   protected readonly sortOptions: { sortBy: SortByOption; order: OrderOption; label: string }[] = [
     { sortBy: 'createdAt', order: 'desc', label: 'Date added (newest)' },
@@ -40,6 +49,12 @@ export class WordsListComponent implements OnInit {
     { sortBy: 'translation', order: 'asc', label: 'Translation (A–Z)' },
     { sortBy: 'translation', order: 'desc', label: 'Translation (Z–A)' },
   ];
+
+  constructor() {
+    this.searchTrigger$
+      .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadFirst());
+  }
 
   ngOnInit(): void {
     this.loadFirst();
@@ -58,15 +73,22 @@ export class WordsListComponent implements OnInit {
     }
   }
 
+  protected onSearchChange(value: string): void {
+    this.search.set(value ?? '');
+    this.searchTrigger$.next();
+  }
+
   loadFirst(): void {
     this.loading.set(true);
     this.error.set(null);
+    const searchTerm = this.search().trim() || undefined;
     this.wordsService
-      .getPage(20, undefined, this.sortBy(), this.order())
+      .getPage(20, undefined, this.sortBy(), this.order(), searchTerm)
       .subscribe({
         next: (page) => {
           this.words.set(page.items);
           this.nextCursor.set(page.nextCursor);
+          this.totalCount.set(page.totalCount);
           this.loading.set(false);
         },
         error: (err) => {
@@ -80,12 +102,14 @@ export class WordsListComponent implements OnInit {
     const cursor = this.nextCursor();
     if (!cursor || this.loadingMore()) return;
     this.loadingMore.set(true);
+    const searchTerm = this.search().trim() || undefined;
     this.wordsService
-      .getPage(20, cursor, this.sortBy(), this.order())
+      .getPage(20, cursor, this.sortBy(), this.order(), searchTerm)
       .subscribe({
         next: (page) => {
           this.words.update((list) => [...list, ...page.items]);
           this.nextCursor.set(page.nextCursor);
+          this.totalCount.set(page.totalCount);
           this.loadingMore.set(false);
         },
         error: () => this.loadingMore.set(false),
