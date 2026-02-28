@@ -1,5 +1,6 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 
 import { ZardSelectImports } from '@/shared/components/select/select.imports';
 
@@ -14,14 +15,17 @@ type OrderOption = 'asc' | 'desc';
 @Component({
   selector: 'app-words-list',
   standalone: true,
-  imports: [FormsModule, ZardSelectImports, WordFormDialogComponent, WordListItemComponent],
+  imports: [FormsModule, ScrollingModule, ZardSelectImports, WordFormDialogComponent, WordListItemComponent],
   templateUrl: './words-list.component.html',
   host: { class: 'block' },
 })
 export class WordsListComponent implements OnInit {
+  @ViewChild(CdkVirtualScrollViewport) private readonly viewportRef?: CdkVirtualScrollViewport;
+
   private readonly wordsService = inject(WordsService);
   protected readonly words = signal<Word[]>([]);
   protected readonly nextCursor = signal<string | null>(null);
+  protected readonly editingWord = signal<Word | null>(null);
   protected readonly loading = signal(false);
   protected readonly loadingMore = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -88,8 +92,17 @@ export class WordsListComponent implements OnInit {
       });
   }
 
-  onScroll(): void {
-    this.loadMore();
+  protected onScrolledIndexChange(): void {
+    if (!this.viewportRef || this.loadingMore() || !this.nextCursor()) return;
+    const range = this.viewportRef.getRenderedRange();
+    const total = this.words().length;
+    if (range.end >= total - 5) {
+      this.loadMore();
+    }
+  }
+
+  protected trackByWordId(_index: number, word: Word): string {
+    return word._id;
   }
 
   onWordDeleted(id: string): void {
@@ -98,6 +111,11 @@ export class WordsListComponent implements OnInit {
 
   onWordSaved(word: Word): void {
     void word;
+    this.editingWord.set(null);
     this.loadFirst();
+  }
+
+  protected onDialogCancel(): void {
+    this.editingWord.set(null);
   }
 }

@@ -25,41 +25,30 @@ describe('WordListItemComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('openEdit should set showEdit true', () => {
-    fixture.componentInstance.openEdit();
-    expect((fixture.componentInstance as unknown as { showEdit: boolean; confirmDelete: boolean }).showEdit).toBe(true);
-  });
-
-  it('closeEdit should set showEdit false', () => {
-    (fixture.componentInstance as unknown as { showEdit: boolean; confirmDelete: boolean }).showEdit = true;
-    fixture.componentInstance.closeEdit();
-    expect((fixture.componentInstance as unknown as { showEdit: boolean; confirmDelete: boolean }).showEdit).toBe(false);
-  });
-
-  it('onEdited should emit edited and close edit', () => {
-    const w: Word = { _id: '1', word: 'updated' };
+  it('openEdit should emit editRequested with current word', () => {
+    const word = { _id: '1', word: 'test' } as Word;
+    fixture.componentRef.setInput('word', word);
+    fixture.detectChanges();
     let emitted: Word | undefined;
-    fixture.componentInstance.edited.subscribe((v) => (emitted = v));
-    (fixture.componentInstance as unknown as { showEdit: boolean; confirmDelete: boolean }).showEdit = true;
-    fixture.componentInstance.onEdited(w);
-    expect(emitted).toEqual(w);
-    expect((fixture.componentInstance as unknown as { showEdit: boolean; confirmDelete: boolean }).showEdit).toBe(false);
+    fixture.componentInstance.editRequested.subscribe((w) => (emitted = w));
+    fixture.componentInstance.openEdit();
+    expect(emitted).toEqual(word);
   });
 
   it('deleteWord should call service delete and emit deleted', () => {
     let emittedId: string | undefined;
     fixture.componentInstance.deleted.subscribe((id) => (emittedId = id));
-    (fixture.componentInstance as unknown as { showEdit: boolean; confirmDelete: boolean }).confirmDelete = true;
+    (fixture.componentInstance as unknown as { confirmDelete: boolean }).confirmDelete = true;
     fixture.componentInstance.deleteWord();
     expect(wordsService.delete).toHaveBeenCalledWith('1');
     expect(emittedId).toBe('1');
-    expect((fixture.componentInstance as unknown as { showEdit: boolean; confirmDelete: boolean }).confirmDelete).toBe(false);
+    expect((fixture.componentInstance as unknown as { confirmDelete: boolean }).confirmDelete).toBe(false);
   });
 
   it('deleteWord on error should reset confirmDelete', () => {
     wordsService.delete.and.returnValue(throwError(() => new Error('err')));
-    (fixture.componentInstance as unknown as { showEdit: boolean; confirmDelete: boolean }).confirmDelete = true;
+    (fixture.componentInstance as unknown as { confirmDelete: boolean }).confirmDelete = true;
     fixture.componentInstance.deleteWord();
-    expect((fixture.componentInstance as unknown as { showEdit: boolean; confirmDelete: boolean }).confirmDelete).toBe(false);
+    expect((fixture.componentInstance as unknown as { confirmDelete: boolean }).confirmDelete).toBe(false);
   });
 });

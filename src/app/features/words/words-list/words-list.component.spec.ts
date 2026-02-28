@@ -16,6 +16,8 @@ type WordsListTestHarness = WordsListComponent & {
   setSort: (sortBy: string, order: string) => void;
   onSortChange: (value: string) => void;
   loadMore: () => void;
+  onScrolledIndexChange: () => void;
+  trackByWordId: (index: number, word: Word) => string;
 };
 
 function listHarness(instance: WordsListComponent): WordsListTestHarness {
@@ -141,10 +143,33 @@ describe('WordsListComponent', () => {
     expect(wordsService.getPage).toHaveBeenCalled();
   });
 
-  it('onScroll should call loadMore', () => {
-    wordsService.getPage.and.returnValue(of({ items: [], nextCursor: null, hasMore: false }));
-    listHarness(fixture.componentInstance).nextCursor.set('cursor');
-    fixture.componentInstance.onScroll();
+  it('onScrolledIndexChange should call loadMore when viewport range end is near list end', () => {
+    const items = Array.from({ length: 20 }, (_, i) => ({ _id: String(i), word: `w${i}` } as Word));
+    wordsService.getPage.and.returnValue(of({ items, nextCursor: 'cursor', hasMore: true }));
+    fixture = TestBed.createComponent(WordsListComponent);
+    fixture.detectChanges();
+    const comp = listHarness(fixture.componentInstance);
+    comp.nextCursor.set('cursor');
+    comp.words.set(items);
+    wordsService.getPage.calls.reset();
+    // Simulate viewport near end: range.end >= total - 5
+    (fixture.componentInstance as unknown as { viewportRef?: { getRenderedRange: () => { end: number } } }).viewportRef = {
+      getRenderedRange: () => ({ start: 0, end: 18 }),
+    };
+    comp.onScrolledIndexChange();
     expect(wordsService.getPage).toHaveBeenCalledWith(20, 'cursor', 'createdAt', 'desc');
+  });
+
+  it('onScrolledIndexChange should not call loadMore when viewportRef is undefined', () => {
+    listHarness(fixture.componentInstance).nextCursor.set('c');
+    wordsService.getPage.calls.reset();
+    (fixture.componentInstance as unknown as { viewportRef?: unknown }).viewportRef = undefined;
+    listHarness(fixture.componentInstance).onScrolledIndexChange();
+    expect(wordsService.getPage).not.toHaveBeenCalled();
+  });
+
+  it('trackByWordId should return word _id', () => {
+    const word = { _id: 'id1', word: 'test' } as Word;
+    expect(listHarness(fixture.componentInstance).trackByWordId(0, word)).toBe('id1');
   });
 });

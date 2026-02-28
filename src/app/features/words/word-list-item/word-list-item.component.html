@@ -55,11 +55,3 @@
     }
   </div>
 </div>
-
-@if (showEdit) {
-  <app-word-form-dialog
-    [word]="word()"
-    (saved)="onEdited($event)"
-    (dialogCancel)="closeEdit()"
-  />
-}

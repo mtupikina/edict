@@ -1,5 +1,5 @@
-<div class="max-w-4xl mx-auto">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+<div class="max-w-4xl mx-auto flex flex-col min-h-[calc(100vh-6rem)]">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 shrink-0">
     <h1 class="text-2xl font-bold text-foreground">Words</h1>
 
     <div class="flex flex-wrap items-center gap-3">
@@ -18,41 +18,38 @@
         </z-select>
       </div>
 
-      <app-word-form-dialog (saved)="onWordSaved($event)" />
+      <app-word-form-dialog
+        [word]="editingWord()"
+        (saved)="onWordSaved($event)"
+        (dialogCancel)="onDialogCancel()"
+      />
     </div>
   </div>
 
   @if (error()) {
-    <p class="text-red-600 mb-4">{{ error() }}</p>
+    <p class="text-red-600 mb-4 shrink-0">{{ error() }}</p>
   }
 
   @if (loading()) {
-    <p class="text-muted-foreground">Loading words...</p>
+    <p class="text-muted-foreground shrink-0">Loading words...</p>
   } @else if (words().length === 0) {
-    <p class="text-muted-foreground">No words yet. Add one to get started.</p>
+    <p class="text-muted-foreground shrink-0">No words yet. Add one to get started.</p>
   } @else {
-    <ul class="space-y-2">
-      @for (w of words(); track w._id) {
-        <li>
-          <app-word-list-item
-            [word]="w"
-            (deleted)="onWordDeleted(w._id)"
-            (edited)="onWordSaved($event)"
-          />
-        </li>
+    <cdk-virtual-scroll-viewport
+      itemSize="110"
+      class="flex-1 min-h-0 w-full block relative z-0"
+      (scrolledIndexChange)="onScrolledIndexChange()"
+    >
+      <app-word-list-item
+        *cdkVirtualFor="let w of words(); trackBy: trackByWordId"
+        [word]="w"
+        (deleted)="onWordDeleted(w._id)"
+        (editRequested)="editingWord.set($event)"
+        class="block mb-2"
+      />
+      @if (loadingMore()) {
+        <p class="mt-4 text-muted-foreground text-center">Loading more...</p>
       }
-    </ul>
-    @if (nextCursor() && !loadingMore()) {
-      <button
-        type="button"
-        (click)="onScroll()"
-        class="mt-6 w-full py-3 text-muted-foreground hover:bg-muted rounded-xl transition-colors"
-      >
-        Load more
-      </button>
-    }
-    @if (loadingMore()) {
-      <p class="mt-4 text-muted-foreground text-center">Loading more...</p>
-    }
+    </cdk-virtual-scroll-viewport>
   }
 </div>
