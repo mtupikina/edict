@@ -18,15 +18,17 @@ export class AuthCallbackComponent implements OnInit {
     const error = this.route.snapshot.queryParamMap.get('error');
 
     if (error === 'unauthorized') {
-      this.router.navigate(['/'], { queryParams: { error: 'unauthorized' } });
+      this.router.navigate(['/login'], {
+        queryParams: { error: 'unauthorized' },
+      });
       return;
     }
 
     if (token) {
       this.authService.setToken(token);
-      this.router.navigate(['/words']);
-    } else {
       this.router.navigate(['/']);
+    } else {
+      this.router.navigate(['/login']);
     }
   }
 }

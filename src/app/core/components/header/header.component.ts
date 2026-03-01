@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ZardButtonComponent } from '@/shared/components/button';
 import { ZardIconComponent } from '@/shared/components/icon';
@@ -16,7 +16,7 @@ interface MeResponse {
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, ZardButtonComponent, ZardIconComponent],
+  imports: [RouterLink, RouterLinkActive, ZardButtonComponent, ZardIconComponent],
   templateUrl: './header.component.html',
   host: { class: 'block' },
 })

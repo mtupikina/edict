@@ -1,0 +1,17 @@
+<button
+  type="button"
+  role="switch"
+  [attr.aria-checked]="checked()"
+  [attr.aria-disabled]="disabled() || null"
+  [attr.data-state]="checked() ? 'checked' : 'unchecked'"
+  [disabled]="disabled()"
+  (click)="toggle()"
+  [class]="classes()"
+>
+  <span
+    class="pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform"
+    [class.translate-x-4]="checked()"
+    [class.translate-x-0.5]="!checked()"
+    aria-hidden="true"
+  ></span>
+</button>

@@ -8,47 +8,62 @@ describe('Auth', () => {
 
   it('redirects to login when visiting /words without token', () => {
     cy.visit('/words');
-    cy.url().should('include', '/');
+    cy.url().should('include', '/login');
     cy.contains('Login with Google').should('be.visible');
   });
 
-  it('shows login page at / with title and login action', () => {
+  it('redirects to /login when visiting / without token', () => {
     cy.visit('/');
+    cy.url().should('include', '/login');
+    cy.contains('Login with Google').should('be.visible');
+  });
+
+  it('shows login page at /login with title and login action', () => {
+    cy.visit('/login');
     cy.contains('E-Dictionary').should('be.visible');
     cy.contains('Login with Google').should('be.visible');
     cy.get('button').contains('Login with Google').should('be.visible');
   });
 
-  it('redirects logged-in user from / to /words', () => {
-    cy.intercept('GET', '**/words*', { items: [], nextCursor: null, hasMore: false, totalCount: 0 }).as('getWords');
+  it('shows check-words (default) when logged-in user visits /', () => {
+    cy.intercept('GET', '**/words/verify/list*', []).as('getToVerifyList');
     cy.login();
     cy.visit('/');
-    cy.url().should('include', '/words');
-    cy.get('label[for="words-sort"]').should('be.visible');
+    cy.url().should('not.include', '/login');
+    cy.contains('Check words').should('be.visible');
   });
 
-  it('auth callback with token redirects to /words and stores token', () => {
+  it('auth callback with token redirects to / and stores token', () => {
     cy.intercept('GET', '**/auth/me', { statusCode: 200 }).as('authMe');
-    cy.intercept('GET', '**/words*', { items: [], nextCursor: null, hasMore: false, totalCount: 0 }).as('getWords');
+    cy.intercept('GET', '**/words/verify/list*', []).as('getToVerifyList');
     cy.visit('/auth/callback?token=e2e-callback-token');
-    cy.url().should('include', '/words');
-    cy.get('label[for="words-sort"]').should('be.visible');
-    // Wait for words request so callback has run and auth is applied
-    cy.wait('@getWords');
+    cy.url().should('not.include', '/login');
+    cy.contains('Check words').should('be.visible');
     cy.window().its('localStorage').invoke('getItem', 'edict_token').should('eq', 'e2e-callback-token');
   });
 
-  it('auth callback with error=unauthorized redirects to / and shows access denied', () => {
+  it('auth callback with error=unauthorized redirects to /login and shows access denied', () => {
     cy.visit('/auth/callback?error=unauthorized');
-    cy.url().should('include', '/');
+    cy.url().should('include', '/login');
     cy.contains('Access denied').should('be.visible');
     cy.contains('Login with Google').should('be.visible');
   });
 
   it('shows access denied when login returns error=unauthorized', () => {
-    cy.visit('/?error=unauthorized');
+    cy.visit('/login?error=unauthorized');
     cy.contains('Access denied').should('be.visible');
     cy.contains('Only authorized users').should('be.visible');
+    cy.contains('Login with Google').should('be.visible');
+  });
+
+  it('logout button navigates to /login and shows login page', () => {
+    cy.intercept('POST', '**/auth/logout', { statusCode: 200 }).as('logout');
+    cy.intercept('GET', '**/words/verify/list*', []).as('getToVerifyList');
+    cy.login();
+    cy.visit('/');
+    cy.url().should('not.include', '/login');
+    cy.get('button[title="Log out"]').click();
+    cy.url().should('include', '/login');
     cy.contains('Login with Google').should('be.visible');
   });
 });

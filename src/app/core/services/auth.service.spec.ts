@@ -80,14 +80,14 @@ describe('AuthService', () => {
     expect(fakeLocation.href).toBe(`${environment.apiUrl}/auth/google`);
   });
 
-  it('logout clears token and navigates to /', () => {
+  it('logout clears token and navigates to /login', () => {
     service.setToken('t');
     service.logout();
     const req = httpMock.expectOne(`${environment.apiUrl}/auth/logout`);
     req.flush({});
     expect(localStorage.removeItem).toHaveBeenCalledWith('edict_token');
     expect(service.getToken()).toBeNull();
-    expect(router.navigate).toHaveBeenCalledWith(['/']);
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 
   it('logout when token exists calls POST auth/logout', () => {
@@ -102,6 +102,6 @@ describe('AuthService', () => {
     service.clearToken();
     service.logout();
     httpMock.expectNone(`${environment.apiUrl}/auth/logout`);
-    expect(router.navigate).toHaveBeenCalledWith(['/']);
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 });

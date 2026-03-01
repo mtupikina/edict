@@ -1,7 +1,7 @@
-<div class="min-h-screen flex flex-col">
-  <app-header />
+<div class="h-screen flex flex-col overflow-hidden">
+  <app-header class="shrink-0" />
 
-  <main class="flex-1 p-4 md:p-6">
+  <main class="flex-1 min-h-0 overflow-auto p-4 md:p-6">
     <router-outlet />
   </main>
 </div>

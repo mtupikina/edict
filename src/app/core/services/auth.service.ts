@@ -43,7 +43,7 @@ export class AuthService {
       this.http.post(`${environment.apiUrl}/auth/logout`, {}).subscribe();
     }
     this.clearToken();
-    this.router.navigate(['/']);
+    this.router.navigate(['/login']);
   }
 
   private getStoredToken(): string | null {

@@ -5,24 +5,19 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./features/auth/login/login.component').then((m) => m.LoginComponent),
-    canActivate: [loggedInGuard],
-  },
-  {
-    path: 'auth/callback',
-    loadComponent: () =>
-      import('./features/auth/auth-callback/auth-callback.component').then(
-        (m) => m.AuthCallbackComponent,
-      ),
-  },
-  {
-    path: '',
-    loadComponent: () =>
       import('./core/components/app-layout/app-layout.component').then(
         (m) => m.AppLayoutComponent,
       ),
     canActivate: [authGuard],
     children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('./features/check-words/check-words.component').then(
+            (m) => m.CheckWordsComponent,
+          ),
+      },
       {
         path: 'words',
         loadComponent: () =>
@@ -31,6 +26,21 @@ export const routes: Routes = [
           ),
       },
     ],
+  },
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./features/auth/login/login.component').then(
+        (m) => m.LoginComponent,
+      ),
+    canActivate: [loggedInGuard],
+  },
+  {
+    path: 'auth/callback',
+    loadComponent: () =>
+      import('./features/auth/auth-callback/auth-callback.component').then(
+        (m) => m.AuthCallbackComponent,
+      ),
   },
   { path: '**', redirectTo: '' },
 ];

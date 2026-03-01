@@ -33,7 +33,7 @@ describe('AuthCallbackComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('on token in query should setToken and navigate to /words', async () => {
+  it('on token in query should setToken and navigate to /', async () => {
     const getParam = jasmine.createSpy('get').and.callFake((k: string) => (k === 'token' ? 'jwt' : null));
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
@@ -47,10 +47,10 @@ describe('AuthCallbackComponent', () => {
     const compFixture = TestBed.createComponent(AuthCallbackComponent);
     compFixture.detectChanges();
     expect(authService.setToken).toHaveBeenCalledWith('jwt');
-    expect(router.navigate).toHaveBeenCalledWith(['/words']);
+    expect(router.navigate).toHaveBeenCalledWith(['/']);
   });
 
-  it('on error=unauthorized should navigate to / with query', async () => {
+  it('on error=unauthorized should navigate to /login with query', async () => {
     const getParam = jasmine.createSpy('get').and.callFake((k: string) => (k === 'error' ? 'unauthorized' : null));
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
@@ -63,11 +63,11 @@ describe('AuthCallbackComponent', () => {
     }).compileComponents();
     const compFixture = TestBed.createComponent(AuthCallbackComponent);
     compFixture.detectChanges();
-    expect(router.navigate).toHaveBeenCalledWith(['/'], { queryParams: { error: 'unauthorized' } });
+    expect(router.navigate).toHaveBeenCalledWith(['/login'], { queryParams: { error: 'unauthorized' } });
     expect(authService.setToken).not.toHaveBeenCalled();
   });
 
-  it('on no token and no error should navigate to /', async () => {
+  it('on no token and no error should navigate to /login', async () => {
     const getParam = jasmine.createSpy('get').and.returnValue(null);
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
@@ -80,6 +80,6 @@ describe('AuthCallbackComponent', () => {
     }).compileComponents();
     const compFixture = TestBed.createComponent(AuthCallbackComponent);
     compFixture.detectChanges();
-    expect(router.navigate).toHaveBeenCalledWith(['/']);
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 });

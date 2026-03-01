@@ -33,11 +33,11 @@ describe('authGuard', () => {
     expect(router.createUrlTree).not.toHaveBeenCalled();
   });
 
-  it('should redirect to / when not authenticated', () => {
+  it('should redirect to /login when not authenticated', () => {
     const result = TestBed.runInInjectionContext(() =>
       authGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
     );
-    expect(router.createUrlTree).toHaveBeenCalledWith(['/']);
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/login']);
     expect(result).toBe(urlTree);
   });
 });
@@ -70,12 +70,12 @@ describe('loggedInGuard', () => {
     expect(router.createUrlTree).not.toHaveBeenCalled();
   });
 
-  it('should redirect to /words when authenticated', () => {
+  it('should redirect to / when authenticated', () => {
     authService.isAuthenticated.and.returnValue(true);
     const result = TestBed.runInInjectionContext(() =>
       loggedInGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
     );
-    expect(router.createUrlTree).toHaveBeenCalledWith(['/words']);
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/']);
     expect(result).toBe(urlTree);
   });
 });

@@ -1,0 +1,228 @@
+<div class="max-w-4xl mx-auto flex flex-col gap-4 pb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <h1 class="text-xl sm:text-2xl font-semibold text-slate-800">Check words</h1>
+    <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
+      <div class="flex items-center gap-2">
+        <z-switch
+          [checked]="wordsVisible()"
+          (checkedChange)="wordsVisible.set($event)"
+          aria-label="Show words"
+        />
+        <span class="text-slate-600">Show words</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <z-switch
+          [checked]="translationsVisible()"
+          (checkedChange)="translationsVisible.set($event)"
+          aria-label="Show translations"
+        />
+        <span class="text-slate-600">Show translations</span>
+      </div>
+    </div>
+  </div>
+
+  @if (error()) {
+    <p class="text-red-600 text-sm">{{ error() }}</p>
+  }
+
+  @if (quizWords().length === 0) {
+  <section class="flex flex-col gap-2">
+    @if (loadingToVerify()) {
+      <p class="text-muted-foreground text-sm">Loading…</p>
+    } @else if (toVerifyList().length === 0) {
+      <p class="text-muted-foreground text-sm">No words marked for verification.</p>
+    } @else {
+      <ul class="space-y-1">
+        @for (w of toVerifyList(); track w._id) {
+          <li
+            class="flex flex-wrap items-center gap-2 py-2 px-3 bg-white rounded-lg border border-slate-200 shadow-sm min-h-0"
+          >
+            <div class="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
+              @if (wordsVisible()) {
+                <span class="font-medium text-slate-800">{{ w.word }}</span>
+              } @else {
+                <span
+                  class="group/reveal relative inline-block min-w-[2.5rem] cursor-help rounded"
+                  [attr.title]="w.word"
+                >
+                  <span class="font-medium text-slate-500 select-none">•••••</span>
+                  <span
+                    class="absolute left-0 top-0 z-10 rounded border border-slate-200 bg-white px-1 font-medium text-slate-800 opacity-0 shadow transition-opacity group-hover/reveal:opacity-100"
+                    [attr.aria-label]="'Reveal: ' + w.word"
+                    >{{ w.word }}</span
+                  >
+                </span>
+              }
+              @if (w.translation) {
+                @if (translationsVisible()) {
+                  <span class="text-slate-500">— {{ w.translation }}</span>
+                } @else {
+                  <span
+                    class="group/reveal-t relative inline-block min-w-[2.5rem] cursor-help rounded"
+                    [attr.title]="w.translation"
+                  >
+                    <span class="text-slate-500 select-none">— •••••</span>
+                    <span
+                      class="absolute left-0 top-0 z-10 rounded border border-slate-200 bg-white px-1 text-slate-500 opacity-0 shadow transition-opacity group-hover/reveal-t:opacity-100"
+                      [attr.aria-label]="'Reveal: ' + w.translation"
+                      >{{ w.translation }}</span
+                    >
+                  </span>
+                }
+              }
+              <span class="text-slate-400">·</span>
+              @if (w.createdAt) {
+                <span class="text-xs text-slate-500">Added {{ w.createdAt | date:'d MMM y' }}</span>
+              }
+              @if (w.lastVerifiedAt) {
+                <span class="text-xs text-slate-500">Verified {{ w.lastVerifiedAt | date:'d MMM y' }}</span>
+              } @else {
+                <span class="text-xs text-slate-500">Never verified</span>
+              }
+            </div>
+            <div class="flex items-center gap-2 shrink-0 text-sm">
+              <z-switch
+                [checked]="w.toVerifyNextTime"
+                (checkedChange)="onToVerifyToggle(w, 'toVerifyNextTime', $event)"
+                aria-label="Verify again"
+              />
+              <span class="text-slate-600 hidden sm:inline">Verify again</span>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <section class="flex flex-col gap-2">
+    <h2 class="text-base font-medium text-slate-700">Generate quiz</h2>
+    <div class="flex flex-wrap items-end gap-3">
+      <div class="flex flex-col gap-1">
+        <label for="quiz-count" class="text-sm font-medium text-slate-700"
+          >Number of words</label
+        >
+        <input
+          id="quiz-count"
+          z-input
+          type="number"
+          min="1"
+          max="100"
+          [ngModel]="count()"
+          (ngModelChange)="count.set($event !== undefined && $event !== null ? +$event : 50)"
+          class="w-24"
+        />
+      </div>
+      <button
+        z-button
+        type="button"
+        (click)="generateQuiz()"
+        [disabled]="loadingQuiz()"
+      >
+        {{ loadingQuiz() ? 'Generating…' : 'Generate' }}
+      </button>
+    </div>
+  </section>
+  }
+
+  @if (quizWords().length > 0) {
+    <section class="flex flex-col gap-2">
+      <h2 class="text-base font-medium text-slate-700">Quiz — mark your answers</h2>
+      <p class="text-xs text-muted-foreground">
+        E→U: English to Ukrainian. U→E: Ukrainian to English.
+      </p>
+      <ul class="space-y-1">
+        @for (w of quizWords(); track w._id) {
+          <li
+            class="flex flex-wrap items-center gap-2 py-2 px-3 bg-white rounded-lg border border-slate-200 shadow-sm min-h-0"
+          >
+            <div class="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
+              @if (wordsVisible()) {
+                <span class="font-medium text-slate-800">{{ w.word }}</span>
+              } @else {
+                <span
+                  class="group/reveal relative inline-block min-w-[2.5rem] cursor-help rounded"
+                  [attr.title]="w.word"
+                >
+                  <span class="font-medium text-slate-500 select-none">•••••</span>
+                  <span
+                    class="absolute left-0 top-0 z-10 rounded border border-slate-200 bg-white px-1 font-medium text-slate-800 opacity-0 shadow transition-opacity group-hover/reveal:opacity-100"
+                    [attr.aria-label]="'Reveal: ' + w.word"
+                    >{{ w.word }}</span
+                  >
+                </span>
+              }
+              @if (w.translation) {
+                @if (translationsVisible()) {
+                  <span class="text-slate-500">— {{ w.translation }}</span>
+                } @else {
+                  <span
+                    class="group/reveal-t relative inline-block min-w-[2.5rem] cursor-help rounded"
+                    [attr.title]="w.translation"
+                  >
+                    <span class="text-slate-500 select-none">— •••••</span>
+                    <span
+                      class="absolute left-0 top-0 z-10 rounded border border-slate-200 bg-white px-1 text-slate-500 opacity-0 shadow transition-opacity group-hover/reveal-t:opacity-100"
+                      [attr.aria-label]="'Reveal: ' + w.translation"
+                      >{{ w.translation }}</span
+                    >
+                  </span>
+                }
+              }
+              <span class="text-slate-400">·</span>
+              @if (w.createdAt) {
+                <span class="text-xs text-slate-500">Added {{ w.createdAt | date:'d MMM y' }}</span>
+              }
+              @if (w.lastVerifiedAt) {
+                <span class="text-xs text-slate-500">Verified {{ w.lastVerifiedAt | date:'d MMM y' }}</span>
+              } @else {
+                <span class="text-xs text-slate-500">Never verified</span>
+              }
+            </div>
+            <div
+              class="flex flex-wrap items-center gap-2 sm:gap-3 text-sm shrink-0"
+              role="group"
+              aria-label="Verification toggles for {{ w.word }}"
+            >
+              <div class="flex items-center gap-1.5">
+                <z-switch
+                  [checked]="w.canEToU ?? false"
+                  (checkedChange)="setQuizWordField(w._id, 'canEToU', $event)"
+                  aria-label="English to Ukrainian"
+                />
+                <span class="text-slate-600">E→U</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <z-switch
+                  [checked]="w.canUToE ?? false"
+                  (checkedChange)="setQuizWordField(w._id, 'canUToE', $event)"
+                  aria-label="Ukrainian to English"
+                />
+                <span class="text-slate-600">U→E</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <z-switch
+                  [checked]="w.toVerifyNextTime ?? false"
+                  (checkedChange)="
+                    setQuizWordField(w._id, 'toVerifyNextTime', $event)
+                  "
+                  aria-label="Verify again"
+                />
+                <span class="text-slate-600 hidden sm:inline">Verify again</span>
+              </div>
+            </div>
+          </li>
+        }
+      </ul>
+      <div class="flex justify-end">
+        <button
+          z-button
+          type="button"
+          (click)="submitQuiz()"
+          [disabled]="submitting()"
+        >
+          {{ submitting() ? 'Submitting…' : 'Submit' }}
+        </button>
+      </div>
+    </section>
+  }
+</div>
