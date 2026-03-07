@@ -10,7 +10,7 @@ import { AuthService } from '../../../core/services/auth.service';
   standalone: true,
   imports: [ZardButtonComponent, ZardIconComponent],
   templateUrl: './login.component.html',
-  host: { class: 'block' },
+  host: { class: 'block min-h-screen flex flex-col items-center justify-center w-full' },
 })
 export class LoginComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
