@@ -82,7 +82,7 @@ describe('CheckWordsComponent', () => {
     expect(component['quizWords']()[0].canEToU).toBe(true);
   });
 
-  it('should call wordsService.update when to-verify toggle is changed', () => {
+  it('should call wordsService.update when word field toggle is changed', () => {
     const updatedWord: Word = {
       _id: '1',
       word: 'hello',
@@ -90,10 +90,42 @@ describe('CheckWordsComponent', () => {
       toVerifyNextTime: false,
     };
     wordsService.update.and.returnValue(of(updatedWord));
-    component.onToVerifyToggle(toVerifyList[0], 'toVerifyNextTime');
+    component.onWordFieldToggle(toVerifyList[0], 'toVerifyNextTime');
     expect(wordsService.update).toHaveBeenCalledWith('1', {
       toVerifyNextTime: false,
     });
+  });
+
+  it('should call wordsService.update when canEToU toggle is changed', () => {
+    const updatedWord: Word = {
+      _id: '1',
+      word: 'hello',
+      translation: 'привіт',
+      canEToU: false,
+    };
+    wordsService.update.and.returnValue(of(updatedWord));
+    component.onWordFieldToggle(
+      { ...toVerifyList[0], canEToU: true },
+      'canEToU',
+      false,
+    );
+    expect(wordsService.update).toHaveBeenCalledWith('1', { canEToU: false });
+  });
+
+  it('should call wordsService.update when canUToE toggle is changed', () => {
+    const updatedWord: Word = {
+      _id: '1',
+      word: 'hello',
+      translation: 'привіт',
+      canUToE: true,
+    };
+    wordsService.update.and.returnValue(of(updatedWord));
+    component.onWordFieldToggle(
+      { ...toVerifyList[0], canUToE: false },
+      'canUToE',
+      true,
+    );
+    expect(wordsService.update).toHaveBeenCalledWith('1', { canUToE: true });
   });
 
   it('should submit quiz and clear list on success', () => {
@@ -117,5 +149,14 @@ describe('CheckWordsComponent', () => {
     );
     component.loadToVerifyList();
     expect(component['error']()).toBe('Network error');
+  });
+
+  it('should toggle reveal state for masked word/translation (tap to reveal on mobile)', () => {
+    const key = '1-word';
+    expect(component['revealedKeys']().has(key)).toBe(false);
+    component.toggleReveal(key);
+    expect(component['revealedKeys']().has(key)).toBe(true);
+    component.toggleReveal(key);
+    expect(component['revealedKeys']().has(key)).toBe(false);
   });
 });

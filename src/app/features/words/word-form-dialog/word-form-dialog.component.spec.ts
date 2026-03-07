@@ -132,7 +132,7 @@ describe('WordFormDialogComponent', () => {
     expect(harness(fixture.componentInstance).form.get('word')?.touched).toBe(true);
   });
 
-  it('save in add mode should call create and emit saved', () => {
+  it('save in add mode should call create, emit saved, keep dialog open and reset form for add another', () => {
     let emitted: Word | undefined;
     fixture.componentInstance.saved.subscribe((w) => (emitted = w));
     harness(fixture.componentInstance).openAdd();
@@ -140,7 +140,8 @@ describe('WordFormDialogComponent', () => {
     harness(fixture.componentInstance).save();
     expect(wordsService.create).toHaveBeenCalled();
     expect(emitted?.word).toBe('new');
-    expect(harness(fixture.componentInstance).showAddForm()).toBe(false);
+    expect(harness(fixture.componentInstance).showAddForm()).toBe(true);
+    expect(harness(fixture.componentInstance).form.get('word')?.value).toBe('');
   });
 
   it('save in edit mode should call update and emit saved', () => {

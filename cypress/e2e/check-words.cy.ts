@@ -134,4 +134,28 @@ describe('Check words (quiz)', () => {
       cy.contains('Show translations').should('be.visible');
     });
   });
+
+  describe('masked words (tap/hover to reveal)', () => {
+    it('shows masked word and reveals it on click (mobile-friendly)', () => {
+      const list = [
+        {
+          _id: 'v1',
+          word: 'hello',
+          translation: 'привіт',
+          toVerifyNextTime: true,
+          lastVerifiedAt: null,
+        },
+      ];
+      cy.intercept('GET', 'http://localhost:3001/words/verify/list', list).as('getToVerifyList');
+      cy.login();
+      cy.visit('/');
+      cy.wait('@getToVerifyList');
+      cy.contains('hello').should('be.visible');
+      cy.get('[aria-label="Show words"]').find('[role="switch"]').click();
+      cy.contains('•••••').should('be.visible');
+      cy.contains('hello').should('not.be.visible');
+      cy.contains('[role="button"]', '•••••').first().click();
+      cy.contains('hello').should('be.visible');
+    });
+  });
 });

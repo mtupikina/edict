@@ -59,12 +59,30 @@ describe('Words', () => {
       cy.login();
       cy.visit('/words');
       cy.wait('@getWords');
-      cy.contains('button', 'Add word').click({ force: true });
+      cy.get('[data-testid="add-word-button"]').click();
       cy.contains('label', 'Word').parent().find('input').should('be.visible').type('test');
       cy.contains('label', 'Translation').parent().find('input').type('prueba');
       cy.contains('button', 'Save').click();
       cy.get('@postWord').its('response.statusCode').should('eq', 201);
-      cy.contains('button', 'Add word').should('be.visible');
+      cy.get('[data-testid="word-dialog-title"]').should('contain', 'Add word');
+    });
+
+    it('sends create request without toVerifyNextTime (backend sets it true for new words)', () => {
+      stubGetWords(emptyPage);
+      cy.intercept('POST', 'http://localhost:3001/words', (req) => {
+        expect(req.body).to.have.property('word');
+        expect(req.body).to.have.property('translation');
+        expect(req.body).to.not.have.property('toVerifyNextTime');
+        req.reply({ statusCode: 201, body: { _id: 'new-1', word: 'x', translation: 'y', toVerifyNextTime: true } });
+      }).as('postWord');
+      cy.login();
+      cy.visit('/words');
+      cy.wait('@getWords');
+      cy.get('[data-testid="add-word-button"]').click();
+      cy.contains('label', 'Word').parent().find('input').should('be.visible').type('x');
+      cy.contains('label', 'Translation').parent().find('input').type('y');
+      cy.contains('button', 'Save').click();
+      cy.get('@postWord').its('response.statusCode').should('eq', 201);
     });
 
     it('shows validation error when word is empty', () => {
@@ -72,7 +90,7 @@ describe('Words', () => {
       cy.login();
       cy.visit('/words');
       cy.wait('@getWords');
-      cy.contains('button', 'Add word').click({ force: true });
+      cy.get('[data-testid="add-word-button"]').click();
       cy.contains('label', 'Word').parent().find('input').should('be.visible').clear();
       cy.contains('button', 'Save').click();
       cy.contains('Word is required').should('be.visible');

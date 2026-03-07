@@ -66,6 +66,7 @@ export class WordFormDialogComponent {
   protected searchHints = signal<Word[]>([]);
   /** True after the user has focused the word input; prevents search from firing on dialog open (e.g. edit mode patch). */
   private wordInputTouched = signal(false);
+  private clearHintsTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   /** Form model is the source of truth (reactive forms). */
   protected form: FormGroup<WordFormControls> = this.buildForm();
@@ -102,6 +103,9 @@ export class WordFormDialogComponent {
   }
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.clearHintsTimeoutId != null) clearTimeout(this.clearHintsTimeoutId);
+    });
     let lastSyncedId: string | null = null;
     effect(() => {
       const w = this.word();
@@ -168,11 +172,58 @@ export class WordFormDialogComponent {
 
   protected onWordInputFocus(): void {
     this.wordInputTouched.set(true);
+    if (this.clearHintsTimeoutId != null) {
+      clearTimeout(this.clearHintsTimeoutId);
+      this.clearHintsTimeoutId = null;
+    }
+  }
+
+  protected onWordInputBlur(): void {
+    this.clearHintsTimeoutId = setTimeout(() => {
+      this.clearHintsTimeoutId = null;
+      this.clearSearchHints();
+    }, 150);
+  }
+
+  protected onWordInputEscape(event: Event): void {
+    if (this.searchHints().length > 0) {
+      this.clearSearchHints();
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
+  protected clearSearchHints(): void {
+    this.searchHints.set([]);
   }
 
   protected close(): void {
     this.showAddForm.set(false);
     this.dialogCancel.emit();
+  }
+
+  /** Done button in add mode: save current word if form is valid, then close. If invalid, show validation and do not close. */
+  protected onDoneClick(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.form.valid) {
+      const payload = formValueToPayload(this.form.getRawValue());
+      this.executeSave(this.wordsService.create(payload), {
+        closeAddForm: true,
+        resetFormAfterSave: false,
+      });
+    } else {
+      this.form.markAllAsTouched();
+      this.focusWordInput();
+    }
+  }
+
+  /** Reset form and state so the user can add another word (after a successful create). */
+  private resetFormForAddAnother(): void {
+    this.form.reset(DEFAULT_FORM_VALUE);
+    this.error.set(null);
+    this.searchHints.set([]);
+    this.focusWordInput();
   }
 
   protected save(): void {
@@ -186,15 +237,20 @@ export class WordFormDialogComponent {
     const w = this.word();
 
     if (w) {
-      this.executeSave(this.wordsService.update(w._id, payload), {});
+      this.executeSave(this.wordsService.update(w._id, payload), {
+        closeAddForm: true,
+      });
     } else {
-      this.executeSave(this.wordsService.create(payload), { closeAddForm: true });
+      this.executeSave(this.wordsService.create(payload), {
+        closeAddForm: false,
+        resetFormAfterSave: true,
+      });
     }
   }
 
   private executeSave(
     request$: Observable<Word>,
-    options: { closeAddForm?: boolean },
+    options: { closeAddForm?: boolean; resetFormAfterSave?: boolean },
   ): void {
     this.submitting.set(true);
     this.error.set(null);
@@ -204,6 +260,7 @@ export class WordFormDialogComponent {
         next: (result) => {
           this.saved.emit(result);
           if (options.closeAddForm) this.showAddForm.set(false);
+          if (options.resetFormAfterSave) this.resetFormForAddAnother();
           this.submitting.set(false);
         },
         error: (err) => {
@@ -213,7 +270,7 @@ export class WordFormDialogComponent {
       });
   }
 
-  private focusWordInput(): void {
+  protected focusWordInput(): void {
     setTimeout(() => this.wordInputRef()?.nativeElement?.focus(), 0);
   }
 

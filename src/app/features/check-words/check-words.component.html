@@ -33,10 +33,15 @@
       <p class="text-muted-foreground text-sm">No words marked for verification.</p>
     } @else {
       <ul class="space-y-1">
-        @for (w of toVerifyList(); track w._id) {
+        @for (w of toVerifyList(); track w._id; let i = $index) {
           <li
             class="flex flex-wrap items-center gap-2 py-2 px-3 bg-white rounded-lg border border-slate-200 shadow-sm min-h-0"
           >
+            <span
+              class="shrink-0 w-3 text-right text-xs font-medium text-slate-500 tabular-nums"
+              [attr.aria-label]="'Word ' + (i + 1) + ' of ' + toVerifyList().length"
+              >{{ i + 1 }}</span
+            >
             <div class="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
               @if (wordsVisible()) {
                 <span class="font-medium text-slate-800">{{ w.word }}</span>
@@ -44,11 +49,18 @@
                 <span
                   class="group/reveal relative inline-block min-w-[2.5rem] cursor-help rounded"
                   [attr.title]="w.word"
+                  tabindex="0"
+                  role="button"
+                  (click)="$event.stopPropagation(); toggleReveal(w._id + '-word')"
+                  (keydown.enter)="$event.preventDefault(); toggleReveal(w._id + '-word')"
+                  (keydown.space)="$event.preventDefault(); toggleReveal(w._id + '-word')"
+                  [attr.aria-label]="'Tap or hover to reveal: ' + w.word"
                 >
                   <span class="font-medium text-slate-500 select-none">•••••</span>
                   <span
                     class="absolute left-0 top-0 z-10 rounded border border-slate-200 bg-white px-1 font-medium text-slate-800 opacity-0 shadow transition-opacity group-hover/reveal:opacity-100"
-                    [attr.aria-label]="'Reveal: ' + w.word"
+                    [class.opacity-100]="revealedKeys().has(w._id + '-word')"
+                    [attr.aria-hidden]="true"
                     >{{ w.word }}</span
                   >
                 </span>
@@ -60,11 +72,18 @@
                   <span
                     class="group/reveal-t relative inline-block min-w-[2.5rem] cursor-help rounded"
                     [attr.title]="w.translation"
+                    tabindex="0"
+                    role="button"
+                    (click)="$event.stopPropagation(); toggleReveal(w._id + '-translation')"
+                    (keydown.enter)="$event.preventDefault(); toggleReveal(w._id + '-translation')"
+                    (keydown.space)="$event.preventDefault(); toggleReveal(w._id + '-translation')"
+                    [attr.aria-label]="'Tap or hover to reveal translation'"
                   >
                     <span class="text-slate-500 select-none">— •••••</span>
                     <span
                       class="absolute left-0 top-0 z-10 rounded border border-slate-200 bg-white px-1 text-slate-500 opacity-0 shadow transition-opacity group-hover/reveal-t:opacity-100"
-                      [attr.aria-label]="'Reveal: ' + w.translation"
+                      [class.opacity-100]="revealedKeys().has(w._id + '-translation')"
+                      [attr.aria-hidden]="true"
                       >{{ w.translation }}</span
                     >
                   </span>
@@ -80,13 +99,31 @@
                 <span class="text-xs text-slate-500">Never verified</span>
               }
             </div>
-            <div class="flex items-center gap-2 shrink-0 text-sm">
-              <z-switch
-                [checked]="w.toVerifyNextTime"
-                (checkedChange)="onToVerifyToggle(w, 'toVerifyNextTime', $event)"
-                aria-label="Verify again"
-              />
-              <span class="text-slate-600 hidden sm:inline">Verify again</span>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 shrink-0 text-sm">
+              <div class="flex items-center gap-2">
+                <z-switch
+                  [checked]="w.canEToU ?? true"
+                  (checkedChange)="onWordFieldToggle(w, 'canEToU', $event)"
+                  aria-label="Quiz E→U"
+                />
+                <span class="text-slate-600 hidden sm:inline">E→U</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <z-switch
+                  [checked]="w.canUToE ?? true"
+                  (checkedChange)="onWordFieldToggle(w, 'canUToE', $event)"
+                  aria-label="Quiz U→E"
+                />
+                <span class="text-slate-600 hidden sm:inline">U→E</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <z-switch
+                  [checked]="w.toVerifyNextTime"
+                  (checkedChange)="onWordFieldToggle(w, 'toVerifyNextTime', $event)"
+                  aria-label="Verify again"
+                />
+                <span class="text-slate-600 hidden sm:inline">Verify again</span>
+              </div>
             </div>
           </li>
         }
@@ -131,10 +168,15 @@
         E→U: English to Ukrainian. U→E: Ukrainian to English.
       </p>
       <ul class="space-y-1">
-        @for (w of quizWords(); track w._id) {
+        @for (w of quizWords(); track w._id; let i = $index) {
           <li
             class="flex flex-wrap items-center gap-2 py-2 px-3 bg-white rounded-lg border border-slate-200 shadow-sm min-h-0"
           >
+            <span
+              class="shrink-0 w-3 text-right text-xs font-medium text-slate-500 tabular-nums"
+              [attr.aria-label]="'Word ' + (i + 1) + ' of ' + quizWords().length"
+              >{{ i + 1 }}</span
+            >
             <div class="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
               @if (wordsVisible()) {
                 <span class="font-medium text-slate-800">{{ w.word }}</span>
@@ -142,11 +184,18 @@
                 <span
                   class="group/reveal relative inline-block min-w-[2.5rem] cursor-help rounded"
                   [attr.title]="w.word"
+                  tabindex="0"
+                  role="button"
+                  (click)="$event.stopPropagation(); toggleReveal(w._id + '-word')"
+                  (keydown.enter)="$event.preventDefault(); toggleReveal(w._id + '-word')"
+                  (keydown.space)="$event.preventDefault(); toggleReveal(w._id + '-word')"
+                  [attr.aria-label]="'Tap or hover to reveal: ' + w.word"
                 >
                   <span class="font-medium text-slate-500 select-none">•••••</span>
                   <span
                     class="absolute left-0 top-0 z-10 rounded border border-slate-200 bg-white px-1 font-medium text-slate-800 opacity-0 shadow transition-opacity group-hover/reveal:opacity-100"
-                    [attr.aria-label]="'Reveal: ' + w.word"
+                    [class.opacity-100]="revealedKeys().has(w._id + '-word')"
+                    [attr.aria-hidden]="true"
                     >{{ w.word }}</span
                   >
                 </span>
@@ -158,11 +207,18 @@
                   <span
                     class="group/reveal-t relative inline-block min-w-[2.5rem] cursor-help rounded"
                     [attr.title]="w.translation"
+                    tabindex="0"
+                    role="button"
+                    (click)="$event.stopPropagation(); toggleReveal(w._id + '-translation')"
+                    (keydown.enter)="$event.preventDefault(); toggleReveal(w._id + '-translation')"
+                    (keydown.space)="$event.preventDefault(); toggleReveal(w._id + '-translation')"
+                    [attr.aria-label]="'Tap or hover to reveal translation'"
                   >
                     <span class="text-slate-500 select-none">— •••••</span>
                     <span
                       class="absolute left-0 top-0 z-10 rounded border border-slate-200 bg-white px-1 text-slate-500 opacity-0 shadow transition-opacity group-hover/reveal-t:opacity-100"
-                      [attr.aria-label]="'Reveal: ' + w.translation"
+                      [class.opacity-100]="revealedKeys().has(w._id + '-translation')"
+                      [attr.aria-hidden]="true"
                       >{{ w.translation }}</span
                     >
                   </span>

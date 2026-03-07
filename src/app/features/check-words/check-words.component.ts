@@ -40,6 +40,8 @@ export class CheckWordsComponent {
   protected loadingQuiz = signal(false);
   protected submitting = signal(false);
   protected error = signal<string | null>(null);
+  /** Keys of masked word/translation that are revealed by tap (for mobile). */
+  protected revealedKeys = signal<Set<string>>(new Set());
 
   constructor() {
     this.loadToVerifyList();
@@ -60,9 +62,9 @@ export class CheckWordsComponent {
     });
   }
 
-  onToVerifyToggle(
+  onWordFieldToggle(
     word: ToVerifyWord,
-    field: 'toVerifyNextTime',
+    field: 'canEToU' | 'canUToE' | 'toVerifyNextTime',
     newValue?: boolean,
   ): void {
     const value = newValue !== undefined ? newValue : !word[field];
@@ -108,6 +110,15 @@ export class CheckWordsComponent {
         w._id === wordId ? { ...w, [field]: value } : w,
       ),
     );
+  }
+
+  toggleReveal(key: string): void {
+    this.revealedKeys.update((s) => {
+      const next = new Set(s);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   }
 
   submitQuiz(): void {
