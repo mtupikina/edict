@@ -76,6 +76,17 @@ describe('ZardSelectComponent', () => {
     expect(() => fixture.componentInstance.setDisabledState()).not.toThrow();
   });
 
+  it('should clear filterQuery when closing when zFilterable', () => {
+    fixture.componentRef.setInput('zFilterable', true);
+    fixture.detectChanges();
+    fixture.componentInstance.filterQuery.set('find-me');
+    fixture.componentInstance.toggle();
+    fixture.detectChanges();
+    fixture.componentInstance.toggle();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.filterQuery()).toBe('');
+  });
+
   it('should not open when toggle is called and disabled', () => {
     fixture.componentRef.setInput('zDisabled', true);
     fixture.detectChanges();
@@ -276,5 +287,43 @@ describe('ZardSelectComponent with content children', () => {
     selectComponent.onDropdownKeydown(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
     hostFixture.detectChanges();
     expect(selectComponent.isOpen()).toBe(true);
+  });
+});
+
+@Component({
+  selector: 'app-test-filter-select-host',
+  standalone: true,
+  imports: [ZardSelectComponent, ZardSelectItemComponent],
+  template: `
+    <z-select zFilterable zFilterPlaceholder="Search">
+      <z-select-item [zValue]="'a'">Alpha</z-select-item>
+      <z-select-item [zValue]="'b'">Beta</z-select-item>
+    </z-select>
+  `,
+})
+class TestFilterSelectHostComponent {}
+
+describe('ZardSelectComponent filterable with items', () => {
+  let hostFixture: ComponentFixture<TestFilterSelectHostComponent>;
+  let selectComponent: ZardSelectComponent;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [TestFilterSelectHostComponent],
+    }).compileComponents();
+    hostFixture = TestBed.createComponent(TestFilterSelectHostComponent);
+    hostFixture.detectChanges();
+    selectComponent = hostFixture.debugElement.query(By.directive(ZardSelectComponent))
+      .componentInstance as ZardSelectComponent;
+  });
+
+  it('visibleItemsCount should reflect filter query', () => {
+    expect(selectComponent.visibleItemsCount()).toBe(2);
+    selectComponent.filterQuery.set('alp');
+    hostFixture.detectChanges();
+    expect(selectComponent.visibleItemsCount()).toBe(1);
+    selectComponent.filterQuery.set('zzz');
+    hostFixture.detectChanges();
+    expect(selectComponent.visibleItemsCount()).toBe(0);
   });
 });

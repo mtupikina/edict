@@ -2,6 +2,14 @@
   <app-header class="shrink-0" />
 
   <main class="flex-1 min-h-0 overflow-auto p-4 md:p-6">
-    <router-outlet />
+    @if (!session.loaded()) {
+      <p class="text-muted-foreground text-sm">Loading…</p>
+    } @else if (session.loadError()) {
+      <p class="text-red-600 text-sm">Could not load your session. Try refreshing the page.</p>
+    } @else if (session.noAccess()) {
+      <app-no-access />
+    } @else {
+      <router-outlet />
+    }
   </main>
 </div>

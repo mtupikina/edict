@@ -43,8 +43,8 @@ export const selectItemVariants = cva(
         lg: 'min-h-10 py-2 text-base',
       },
       zMode: {
-        normal: 'pr-8 pl-2',
-        compact: 'pl-6.5 pr-2',
+        normal: 'pl-2.5 pr-7',
+        compact: 'pl-5 pr-2',
       },
     },
     compoundVariants: [

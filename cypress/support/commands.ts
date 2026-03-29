@@ -3,19 +3,26 @@
 /* eslint-disable @typescript-eslint/no-namespace -- Cypress Chainable augmentation requires namespace */
 const TOKEN_KEY = 'edict_token';
 
-const MOCK_ME = {
+/** Matches GET /auth/me (auth session) shape used by SessionContextService. */
+const MOCK_AUTH_ME = {
+  userId: 'e2e-user-id',
   email: 'e2e@test.com',
   firstName: null as string | null,
   lastName: null as string | null,
+  roleNames: ['student'],
+  showTutorMode: false,
+  showStudentMode: true,
+  defaultMode: 'student' as const,
+  students: [] as { _id: string; firstName: string; lastName: string; email: string }[],
 };
 
 /**
  * Simulate being logged in by setting the auth token in localStorage.
- * Stubs GET /auth/me so the app receives a valid user instead of 401.
+ * Stubs GET /auth/me so the app receives a valid session instead of 401.
  * Use before visiting protected routes; stub other APIs as needed.
  */
 Cypress.Commands.add('login', () => {
-  cy.intercept('GET', '**/auth/me', { statusCode: 200, body: MOCK_ME }).as('authMe');
+  cy.intercept('GET', '**/auth/me', { statusCode: 200, body: MOCK_AUTH_ME }).as('authMe');
   cy.window().then((win) => {
     win.localStorage.setItem(TOKEN_KEY, 'e2e-test-token');
   });

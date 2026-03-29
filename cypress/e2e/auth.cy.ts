@@ -34,7 +34,20 @@ describe('Auth', () => {
   });
 
   it('auth callback with token redirects to / and stores token', () => {
-    cy.intercept('GET', '**/auth/me', { statusCode: 200 }).as('authMe');
+    cy.intercept('GET', '**/auth/me', {
+      statusCode: 200,
+      body: {
+        userId: 'callback-user',
+        email: 'cb@test.com',
+        firstName: null,
+        lastName: null,
+        roleNames: ['student'],
+        showTutorMode: false,
+        showStudentMode: true,
+        defaultMode: 'student',
+        students: [],
+      },
+    }).as('authMe');
     cy.intercept('GET', '**/words/verify/list*', []).as('getToVerifyList');
     cy.visit('/auth/callback?token=e2e-callback-token');
     cy.url().should('not.include', '/login');

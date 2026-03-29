@@ -2,7 +2,6 @@ import { Overlay, OverlayModule, OverlayPositionBuilder, type OverlayRef } from 
 import { TemplatePortal } from '@angular/cdk/portal';
 import { isPlatformBrowser } from '@angular/common';
 import {
-  type AfterContentInit,
   afterNextRender,
   booleanAttribute,
   ChangeDetectionStrategy,
@@ -10,6 +9,7 @@ import {
   computed,
   contentChildren,
   DestroyRef,
+  effect,
   ElementRef,
   forwardRef,
   inject,
@@ -67,7 +67,7 @@ const COMPACT_MODE_WIDTH_THRESHOLD = 100;
     '(keydown.{enter,space,arrowdown,arrowup,escape}.prevent)': 'onTriggerKeydown($event)',
   },
 })
-export class ZardSelectComponent implements ControlValueAccessor, AfterContentInit, OnDestroy {
+export class ZardSelectComponent implements ControlValueAccessor, OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly injector = inject(Injector);
@@ -77,6 +77,7 @@ export class ZardSelectComponent implements ControlValueAccessor, AfterContentIn
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly dropdownTemplate = viewChild.required<TemplateRef<void>>('dropdownTemplate');
+  readonly filterInputRef = viewChild<ElementRef<HTMLInputElement>>('filterInput');
   readonly selectItems = contentChildren(ZardSelectItemComponent);
 
   private overlayRef?: OverlayRef;
@@ -89,9 +90,14 @@ export class ZardSelectComponent implements ControlValueAccessor, AfterContentIn
   readonly zMultiple = input<boolean>(false);
   readonly zPlaceholder = input<string>('Select an option...');
   readonly zSize = input<ZardSelectSizeVariants>('default');
+  /** When true, shows a search field and hides non-matching items by label (client-side). */
+  readonly zFilterable = input(false, { transform: booleanAttribute });
+  readonly zFilterPlaceholder = input<string>('Search…');
   readonly zValue = model<string | string[]>(this.zMultiple() ? [] : '');
 
   readonly zSelectionChange = output<string | string[]>();
+
+  readonly filterQuery = signal('');
 
   readonly isOpen = signal(false);
   readonly focusedIndex = signal<number>(-1);
@@ -125,6 +131,17 @@ export class ZardSelectComponent implements ControlValueAccessor, AfterContentIn
 
   protected readonly classes = computed(() => mergeClasses(selectVariants(), this.class()));
   protected readonly contentClasses = computed(() => mergeClasses(selectContentVariants()));
+
+  /** For empty-state when filter excludes every item. */
+  readonly visibleItemsCount = computed(() => {
+    const filterable = this.zFilterable();
+    const q = this.filterQuery().trim().toLowerCase();
+    const items = this.selectItems();
+    if (!filterable || !q) {
+      return items.length;
+    }
+    return items.filter(i => i.label().toLowerCase().includes(q)).length;
+  });
   protected readonly triggerClasses = computed(() =>
     mergeClasses(
       selectTriggerVariants({
@@ -133,24 +150,26 @@ export class ZardSelectComponent implements ControlValueAccessor, AfterContentIn
     ),
   );
 
-  ngAfterContentInit() {
-    const hostWidth = this.elementRef.nativeElement.offsetWidth || 0;
-    // Setup select host reference for each item
-    let i = 0;
-    for (const item of this.selectItems()) {
-      item.setSelectHost({
-        selectedValue: () => (this.zMultiple() ? (this.zValue() as string[]) : [this.zValue() as string]),
-        selectItem: (value: string, label: string) => this.selectItem(value, label),
-        navigateTo: () => this.navigateTo(item, i),
-      });
-      item.zSize.set(this.zSize());
-      i++;
-
-      if (hostWidth <= COMPACT_MODE_WIDTH_THRESHOLD) {
-        this.isCompact.set(true);
-        item.zMode.set('compact');
+  constructor() {
+    effect(() => {
+      const items = this.selectItems();
+      const hostWidth = this.elementRef.nativeElement.offsetWidth || 0;
+      const filterable = this.zFilterable();
+      for (const item of items) {
+        item.setSelectHost({
+          selectedValue: () =>
+            this.zMultiple() ? (this.zValue() as string[]) : [this.zValue() as string],
+          selectItem: (value: string, label: string) => this.selectItem(value, label),
+          navigateTo: () => this.navigateTo(item),
+          filterQuery: filterable ? this.filterQuery : undefined,
+        });
+        item.zSize.set(this.zSize());
+        if (hostWidth <= COMPACT_MODE_WIDTH_THRESHOLD) {
+          this.isCompact.set(true);
+          item.zMode.set('compact');
+        }
       }
-    }
+    });
   }
 
   ngOnDestroy() {
@@ -250,9 +269,14 @@ export class ZardSelectComponent implements ControlValueAccessor, AfterContentIn
     }
   }
 
-  private navigateTo(element: ZardSelectItemComponent, index: number): void {
-    this.focusedIndex.set(index);
-    this.updateItemFocus(this.getSelectItems(true), index);
+  private navigateTo(item: ZardSelectItemComponent): void {
+    const items = this.getSelectItems();
+    const el = item.elementRef.nativeElement;
+    const index = items.indexOf(el);
+    if (index >= 0) {
+      this.focusedIndex.set(index);
+      this.updateItemFocus(items, index);
+    }
   }
 
   private updateOverlayPosition(): void {
@@ -324,8 +348,55 @@ export class ZardSelectComponent implements ControlValueAccessor, AfterContentIn
   }
 
   private setFocusOnOpen(): void {
+    if (this.zFilterable()) {
+      runInInjectionContext(this.injector, () => {
+        afterNextRender(() => {
+          const inp = this.filterInputRef()?.nativeElement;
+          if (inp) {
+            inp.value = this.filterQuery();
+            inp.focus();
+          }
+        });
+      });
+      return;
+    }
     this.focusDropdown();
     this.focusSelectedItem();
+  }
+
+  protected onFilterInput(event: Event): void {
+    const v = (event.target as HTMLInputElement).value;
+    this.filterQuery.set(v);
+  }
+
+  protected onFilterInputKeydown(event: KeyboardEvent): void {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.focusFirstVisibleItem();
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.close();
+      this.focusButton();
+      return;
+    }
+    if (event.key === 'Tab') {
+      return;
+    }
+    event.stopPropagation();
+  }
+
+  private focusFirstVisibleItem(): void {
+    const items = this.getSelectItems();
+    if (items.length === 0) {
+      return;
+    }
+    this.focusedIndex.set(0);
+    this.updateItemFocus(items, 0);
+    items[0]?.focus();
   }
 
   private close() {
@@ -334,6 +405,7 @@ export class ZardSelectComponent implements ControlValueAccessor, AfterContentIn
     }
     this.isOpen.set(false);
     this.focusedIndex.set(-1);
+    this.filterQuery.set('');
     this.onTouched();
     this.updateFocusWhenNormalMode();
   }
@@ -456,14 +528,22 @@ export class ZardSelectComponent implements ControlValueAccessor, AfterContentIn
     }
   }
 
-  private getSelectItems(ignoreFilter = false): HTMLElement[] {
+  private getSelectItems(includeDisabled = false): HTMLElement[] {
     if (!this.overlayRef?.hasAttached()) {
       return [];
     }
     const dropdownElement = this.overlayRef.overlayElement;
-    return Array.from(dropdownElement.querySelectorAll<HTMLElement>('z-select-item, [z-select-item]')).filter(
-      item => ignoreFilter || item.dataset['disabled'] === undefined,
-    );
+    return Array.from(
+      dropdownElement.querySelectorAll<HTMLElement>('z-select-item, [z-select-item]'),
+    ).filter(item => {
+      if (item.hidden) {
+        return false;
+      }
+      if (!includeDisabled && item.dataset['disabled'] !== undefined) {
+        return false;
+      }
+      return true;
+    });
   }
 
   private navigateItems(direction: number, items: HTMLElement[]) {

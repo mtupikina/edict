@@ -1,8 +1,32 @@
+import { computed, signal, WritableSignal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { Subscription } from 'rxjs';
 import { of, throwError } from 'rxjs';
 
+import { Router } from '@angular/router';
+
+import type { AuthSession } from '../../core/models/auth-session.model';
+import { SessionContextService } from '../../core/services/session-context.service';
 import { CheckWordsComponent } from './check-words.component';
+
+function sessionMock(canWrite = true): Partial<SessionContextService> {
+  return {
+    session: signal(null),
+    loaded: signal(true),
+    loadError: signal(false),
+    loadSession: () => Subscription.EMPTY,
+    clearSession: () => {
+      void 0;
+    },
+    mode: signal<'tutor' | 'student'>('student'),
+    selectedStudentId: signal(null),
+    routeSyncGeneration: signal(0),
+    noAccess: computed(() => false),
+    canLoadWords: computed(() => true),
+    canWriteWords: computed(() => canWrite),
+  };
+}
 import { CheckWordsService } from './services/check-words.service';
 import { WordsService } from '../words/services/words.service';
 import { ToVerifyWord, QuizWord } from './models/check-words.model';
@@ -48,6 +72,8 @@ describe('CheckWordsComponent', () => {
       providers: [
         { provide: CheckWordsService, useValue: checkWordsSpy },
         { provide: WordsService, useValue: wordsSpy },
+        { provide: SessionContextService, useValue: sessionMock() },
+        { provide: Router, useValue: { url: '/' } },
       ],
     }).compileComponents();
 
@@ -67,6 +93,93 @@ describe('CheckWordsComponent', () => {
   it('should load to-verify list on init', () => {
     expect(checkWordsService.getToVerifyList).toHaveBeenCalled();
     expect(component['toVerifyList']()).toEqual(toVerifyList);
+  });
+
+  describe('tutor default redirect from /', () => {
+    let sessionSig: WritableSignal<AuthSession | null>;
+    let routeGen: WritableSignal<number>;
+    let routerState: { url: string };
+
+    beforeEach(async () => {
+      TestBed.resetTestingModule();
+
+      const checkWordsSpy = jasmine.createSpyObj('CheckWordsService', [
+        'getToVerifyList',
+        'generateQuiz',
+        'submitQuiz',
+      ]);
+      const wordsSpy = jasmine.createSpyObj('WordsService', ['update']);
+      checkWordsSpy.getToVerifyList.and.returnValue(of(toVerifyList));
+      checkWordsSpy.generateQuiz.and.returnValue(of(quizWords));
+      checkWordsSpy.submitQuiz.and.returnValue(of(undefined));
+
+      sessionSig = signal<AuthSession | null>({
+        userId: 'tutor-user',
+        email: 't@test.com',
+        firstName: null,
+        lastName: null,
+        roleNames: ['tutor'],
+        showTutorMode: true,
+        showStudentMode: true,
+        defaultMode: 'tutor',
+        students: [{ _id: 'stu1', firstName: 'A', lastName: 'B', email: 'a@b.com' }],
+      });
+      routeGen = signal(0);
+      routerState = { url: '/' };
+
+      await TestBed.configureTestingModule({
+        imports: [CheckWordsComponent, HttpClientTestingModule],
+        providers: [
+          { provide: CheckWordsService, useValue: checkWordsSpy },
+          { provide: WordsService, useValue: wordsSpy },
+          {
+            provide: SessionContextService,
+            useValue: {
+              session: sessionSig,
+              loaded: signal(true),
+              loadError: signal(false),
+              loadSession: () => Subscription.EMPTY,
+              clearSession: () => {
+                void 0;
+              },
+              mode: signal<'tutor' | 'student'>('student'),
+              selectedStudentId: signal<string | null>(null),
+              routeSyncGeneration: routeGen,
+              noAccess: computed(() => false),
+              canLoadWords: computed(() => true),
+              canWriteWords: computed(() => true),
+            },
+          },
+          {
+            provide: Router,
+            useValue: {
+              get url() {
+                return routerState.url;
+              },
+            },
+          },
+        ],
+      }).compileComponents();
+
+      fixture = TestBed.createComponent(CheckWordsComponent);
+      component = fixture.componentInstance;
+      checkWordsService = TestBed.inject(
+        CheckWordsService,
+      ) as jasmine.SpyObj<CheckWordsService>;
+      fixture.detectChanges();
+    });
+
+    it('does not fetch verify list on / while layout will redirect to tutee URL', () => {
+      expect(checkWordsService.getToVerifyList).not.toHaveBeenCalled();
+    });
+
+    it('fetches verify list once after URL is /student/:id', () => {
+      expect(checkWordsService.getToVerifyList).not.toHaveBeenCalled();
+      routerState.url = '/student/stu1';
+      routeGen.update((n) => n + 1);
+      fixture.detectChanges();
+      expect(checkWordsService.getToVerifyList).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('should generate quiz when generateQuiz is called', () => {

@@ -1,24 +1,117 @@
 <header class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-    <div class="flex items-center gap-4 sm:gap-6 shrink-0">
-      <a routerLink="/" class="flex items-center gap-2">
-        <img src="assets/logo.png" alt="E-Dictionary" class="w-9 h-9 rounded-lg object-contain" width="36" height="36" />
-        <span class="font-bold text-slate-800 text-lg hidden sm:inline">E-Dictionary</span>
-      </a>
-      <nav class="flex items-center gap-2 sm:gap-4 text-sm">
-        <a routerLink="/" routerLinkActive="font-semibold text-slate-800" [routerLinkActiveOptions]="{ exact: true }" class="text-slate-600 hover:text-slate-800">Check words</a>
-        <a routerLink="/words" routerLinkActive="font-semibold text-slate-800" class="text-slate-600 hover:text-slate-800">Words</a>
-      </nav>
+  <div
+    class="max-w-6xl mx-auto flex flex-col gap-1.5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-3"
+  >
+    <!-- Row 1: brand + nav; mobile account on same line to save vertical space -->
+    <div class="flex min-w-0 flex-1 items-center justify-between gap-2 sm:gap-6">
+      <div class="flex min-w-0 items-center gap-2 sm:gap-6">
+        <a
+          [routerLink]="checkWordsLink()"
+          [queryParams]="selfVocabNavQueryParams()"
+          class="flex shrink-0 items-center gap-2"
+        >
+          <img
+            src="assets/logo.png"
+            alt="E-Dictionary"
+            class="h-8 w-8 rounded-lg object-contain sm:h-9 sm:w-9"
+            width="36"
+            height="36"
+          />
+          <span class="hidden font-bold text-slate-800 text-lg sm:inline">E-Dictionary</span>
+        </a>
+        @if (session.loaded() && !session.noAccess()) {
+          <nav
+            class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs sm:gap-x-4 sm:text-sm"
+            aria-label="Primary"
+          >
+            <a
+              [routerLink]="checkWordsLink()"
+              [queryParams]="selfVocabNavQueryParams()"
+              routerLinkActive="font-semibold text-slate-800"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="text-slate-600 hover:text-slate-800"
+              >Check words</a
+            >
+            <a
+              [routerLink]="wordsListLink()"
+              [queryParams]="selfVocabNavQueryParams()"
+              routerLinkActive="font-semibold text-slate-800"
+              class="text-slate-600 hover:text-slate-800"
+              >Words</a
+            >
+          </nav>
+        }
+      </div>
+
+      @if (session.loaded() && session.session(); as sess) {
+        <div class="flex shrink-0 items-center gap-1 sm:hidden">
+          <span
+            class="max-w-[4.5rem] truncate text-xs text-slate-600"
+            [title]="sess.email"
+          >
+            {{ displayName }}
+          </span>
+          <button z-button type="button" (click)="logout()" zType="ghost" zSize="icon" title="Log out">
+            <z-icon zType="log-out" class="h-5 w-5" />
+          </button>
+        </div>
+      }
     </div>
 
-    <div class="flex items-center gap-3">
-      <span class="text-sm text-slate-600 truncate max-w-[140px] sm:max-w-[200px]" [title]="user()?.email ?? ''">
-        {{ displayName }}
-      </span>
+    @if (session.loaded() && session.session(); as sess) {
+      <div
+        class="flex w-full min-w-0 flex-col gap-1.5 sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-3"
+      >
+        @if (hasTutorToolbar(sess)) {
+          <div
+            class="grid w-full grid-cols-2 gap-2 min-w-0 border-t border-slate-100 pt-1.5 sm:flex sm:w-auto sm:border-0 sm:pt-0 sm:gap-2"
+          >
+            @if (sess.showTutorMode && sess.showStudentMode) {
+              <span class="sr-only" id="edict-mode-label">Mode</span>
+              <z-select
+                aria-labelledby="edict-mode-label"
+                [ngModel]="session.mode()"
+                (ngModelChange)="onModeChange($event)"
+                zPlaceholder="Mode"
+                zSize="sm"
+                class="min-w-0 sm:w-[9rem] sm:shrink-0"
+              >
+                <z-select-item zValue="tutor">Tutor</z-select-item>
+                <z-select-item zValue="student">Student</z-select-item>
+              </z-select>
+            }
+            @if (sess.showTutorMode && session.mode() === 'tutor' && sess.students.length > 1) {
+              <span class="sr-only" id="edict-student-label">Student</span>
+              <z-select
+                aria-labelledby="edict-student-label"
+                [ngModel]="session.selectedStudentId() ?? ''"
+                (ngModelChange)="onStudentChange($event)"
+                zPlaceholder="Select student…"
+                zFilterable
+                zFilterPlaceholder="Search students"
+                zSize="sm"
+                class="min-w-0 sm:w-[12rem] sm:max-w-[15rem]"
+              >
+                @for (st of sess.students; track st._id) {
+                  <z-select-item [zValue]="st._id">{{ st.firstName }} {{ st.lastName }}</z-select-item>
+                }
+              </z-select>
+            }
+          </div>
+        }
 
-      <button z-button type="button" (click)="logout()" zType="ghost" zSize="icon" title="Log out">
-        <z-icon zType="log-out" class="w-5 h-5" />
-      </button>
-    </div>
+        <div class="hidden sm:flex shrink-0 items-center gap-2">
+          <span
+            class="min-w-0 max-w-[10rem] truncate text-sm text-slate-600 md:max-w-[200px]"
+            [title]="sess.email"
+          >
+            {{ displayName }}
+          </span>
+          <button z-button type="button" (click)="logout()" zType="ghost" zSize="icon" title="Log out">
+            <z-icon zType="log-out" class="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    }
   </div>
 </header>

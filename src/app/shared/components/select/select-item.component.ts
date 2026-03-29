@@ -8,6 +8,7 @@ import {
   input,
   linkedSignal,
   signal,
+  type Signal,
 } from '@angular/core';
 
 import { ZardIconComponent } from '@/shared/components/icon';
@@ -19,11 +20,12 @@ import {
 } from '@/shared/components/select/select.variants';
 import { mergeClasses, noopFn } from '@/shared/utils/merge-classes';
 
-// Interface to avoid circular dependency
-interface SelectHost {
+/** Parent z-select host; kept minimal to avoid circular imports. */
+export interface ZardSelectHost {
   selectedValue(): string[];
   selectItem(value: string, label: string): void;
   navigateTo(): void;
+  filterQuery?: Signal<string>;
 }
 
 @Component({
@@ -37,6 +39,7 @@ interface SelectHost {
     '[class]': 'classes()',
     '[attr.value]': 'zValue()',
     '[attr.data-disabled]': 'zDisabled() ? "" : null',
+    '[hidden]': 'isHiddenByFilter()',
     '[attr.data-selected]': 'isSelected() ? "" : null',
     '[attr.aria-selected]': 'isSelected()',
     '(click)': 'onClick()',
@@ -51,7 +54,7 @@ export class ZardSelectItemComponent {
   readonly zDisabled = input(false, { transform: booleanAttribute });
   readonly class = input<string>('');
 
-  private readonly select = signal<SelectHost | null>(null);
+  private readonly select = signal<ZardSelectHost | null>(null);
   noopFn = noopFn;
 
   readonly label = linkedSignal<string>(() => {
@@ -74,7 +77,20 @@ export class ZardSelectItemComponent {
 
   protected readonly isSelected = computed(() => this.select()?.selectedValue().includes(this.zValue()) ?? false);
 
-  setSelectHost(selectHost: SelectHost) {
+  /** Hidden from layout and keyboard nav when filter does not match label. */
+  protected readonly isHiddenByFilter = computed(() => {
+    const fq = this.select()?.filterQuery;
+    if (!fq) {
+      return false;
+    }
+    const q = fq().trim().toLowerCase();
+    if (!q) {
+      return false;
+    }
+    return !this.label().toLowerCase().includes(q);
+  });
+
+  setSelectHost(selectHost: ZardSelectHost) {
     this.select.set(selectHost);
   }
 

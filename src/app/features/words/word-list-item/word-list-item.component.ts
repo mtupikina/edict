@@ -14,6 +14,8 @@ import { WordsService } from '../services/words.service';
 export class WordListItemComponent {
   private readonly wordsService = inject(WordsService);
   word = input.required<Word>();
+  /** When true, hide edit/delete (student read-only view). */
+  readOnly = input(false);
   deleted = output<string>();
   editRequested = output<Word>();
 

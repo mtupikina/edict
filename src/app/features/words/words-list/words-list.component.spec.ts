@@ -1,9 +1,29 @@
+import { computed, signal } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { Subscription } from 'rxjs';
 import { of, throwError } from 'rxjs';
 
+import { SessionContextService } from '../../../core/services/session-context.service';
 import { Word } from '../models/word.model';
 import { WordsService } from '../services/words.service';
 import { WordsListComponent } from './words-list.component';
+
+function sessionMock(): Partial<SessionContextService> {
+  return {
+    session: signal(null),
+    loaded: signal(true),
+    loadError: signal(false),
+    loadSession: () => Subscription.EMPTY,
+    clearSession: () => {
+      void 0;
+    },
+    mode: signal<'tutor' | 'student'>('student'),
+    selectedStudentId: signal(null),
+    noAccess: computed(() => false),
+    canLoadWords: computed(() => true),
+    canWriteWords: computed(() => true),
+  };
+}
 
 /** Test surface for protected/private members and signals. */
 type WordsListTestHarness = WordsListComponent & {
@@ -36,7 +56,10 @@ describe('WordsListComponent', () => {
     wordsService.getPage.and.returnValue(of({ items: [], nextCursor: null, hasMore: false, totalCount: 0 }));
     await TestBed.configureTestingModule({
       imports: [WordsListComponent],
-      providers: [{ provide: WordsService, useValue: wordsService }],
+      providers: [
+        { provide: WordsService, useValue: wordsService },
+        { provide: SessionContextService, useValue: sessionMock() },
+      ],
     }).compileComponents();
     fixture = TestBed.createComponent(WordsListComponent);
     fixture.detectChanges();

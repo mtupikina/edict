@@ -1,7 +1,7 @@
 <div class="max-w-4xl mx-auto flex flex-col gap-4 pb-6">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-    <h1 class="text-xl sm:text-2xl font-semibold text-slate-800">Check words</h1>
-    <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+    <h1 class="text-xl sm:text-2xl font-semibold text-slate-800 shrink-0">Check words</h1>
+    <div class="flex w-full flex-wrap items-center gap-x-4 gap-y-3 text-sm sm:w-auto sm:justify-end sm:gap-6">
       <div class="flex items-center gap-2">
         <z-switch
           [checked]="wordsVisible()"
@@ -100,6 +100,7 @@
               }
             </div>
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 shrink-0 text-sm">
+              @if (sessionContext.canWriteWords()) {
               <div class="flex items-center gap-2">
                 <z-switch
                   [checked]="w.canEToU ?? true"
@@ -124,6 +125,7 @@
                 />
                 <span class="text-slate-600 hidden sm:inline">Verify again</span>
               </div>
+              }
             </div>
           </li>
         }
@@ -133,8 +135,8 @@
 
   <section class="flex flex-col gap-2">
     <h2 class="text-base font-medium text-slate-700">Generate quiz</h2>
-    <div class="flex flex-wrap items-end gap-3">
-      <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+      <div class="flex flex-col gap-1 w-full max-w-xs sm:w-auto">
         <label for="quiz-count" class="text-sm font-medium text-slate-700"
           >Number of words</label
         >
@@ -146,12 +148,13 @@
           max="100"
           [ngModel]="count()"
           (ngModelChange)="count.set($event !== undefined && $event !== null ? +$event : 50)"
-          class="w-24"
+          class="w-full sm:w-24"
         />
       </div>
       <button
         z-button
         type="button"
+        class="w-full sm:w-auto"
         (click)="generateQuiz()"
         [disabled]="loadingQuiz()"
       >
@@ -269,6 +272,7 @@
           </li>
         }
       </ul>
+      @if (sessionContext.canWriteWords()) {
       <div class="flex justify-end">
         <button
           z-button
@@ -279,6 +283,7 @@
           {{ submitting() ? 'Submitting…' : 'Submit' }}
         </button>
       </div>
+      }
     </section>
   }
 </div>

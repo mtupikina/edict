@@ -1,4 +1,12 @@
-import { Component, DestroyRef, inject, signal, OnInit, ViewChild } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  effect,
+  inject,
+  signal,
+  untracked,
+  ViewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
@@ -8,6 +16,7 @@ import { debounceTime } from 'rxjs/operators';
 import { ZardInputDirective } from '@/shared/components/input';
 import { ZardSelectImports } from '@/shared/components/select/select.imports';
 
+import { SessionContextService } from '../../../core/services/session-context.service';
 import { WordsService } from '../services/words.service';
 import { Word } from '../models/word.model';
 import { WordFormDialogComponent } from '../word-form-dialog/word-form-dialog.component';
@@ -23,10 +32,11 @@ type OrderOption = 'asc' | 'desc';
   templateUrl: './words-list.component.html',
   host: { class: 'block' },
 })
-export class WordsListComponent implements OnInit {
+export class WordsListComponent {
   @ViewChild(CdkVirtualScrollViewport) private readonly viewportRef?: CdkVirtualScrollViewport;
 
   private readonly wordsService = inject(WordsService);
+  private readonly sessionContext = inject(SessionContextService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly searchTrigger$ = new Subject<void>();
 
@@ -50,14 +60,43 @@ export class WordsListComponent implements OnInit {
     { sortBy: 'translation', order: 'desc', label: 'Translation (Z–A)' },
   ];
 
+  /**
+   * Same session key dedup as check-words: the effect can run twice while mode/studentId settle.
+   */
+  private lastWordsSessionKey: string | null = null;
+
   constructor() {
     this.searchTrigger$
       .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.loadFirst());
+
+    effect(() => {
+      this.sessionContext.mode();
+      this.sessionContext.selectedStudentId();
+      this.sessionContext.canLoadWords();
+      if (!this.sessionContext.canLoadWords()) {
+        untracked(() => {
+          this.lastWordsSessionKey = null;
+        });
+        return;
+      }
+      untracked(() => this.loadFirstIfSessionContextChanged());
+    });
   }
 
-  ngOnInit(): void {
+  private loadFirstIfSessionContextChanged(): void {
+    const mode = this.sessionContext.mode();
+    const sid = this.sessionContext.selectedStudentId();
+    const key = `${mode}:${sid ?? ''}`;
+    if (key === this.lastWordsSessionKey) {
+      return;
+    }
+    this.lastWordsSessionKey = key;
     this.loadFirst();
+  }
+
+  protected isReadOnly(): boolean {
+    return !this.sessionContext.canWriteWords();
   }
 
   setSort(sortBy: SortByOption, order: OrderOption): void {

@@ -1,6 +1,7 @@
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
+import type { ToVerifyWord } from '../models/check-words.model';
 import { CheckWordsService } from './check-words.service';
 import { environment } from '../../../../environments/environment';
 
@@ -33,6 +34,14 @@ describe('CheckWordsService', () => {
     const req = httpMock.expectOne(`${BASE}/verify/list`);
     expect(req.request.method).toBe('GET');
     req.flush(list);
+  });
+
+  it('getToVerifyList should issue a new GET on each call', () => {
+    const list: ToVerifyWord[] = [];
+    service.getToVerifyList().subscribe();
+    httpMock.expectOne(`${BASE}/verify/list`).flush(list);
+    service.getToVerifyList().subscribe();
+    httpMock.expectOne(`${BASE}/verify/list`).flush(list);
   });
 
   it('generateQuiz should POST verify/generate with count', () => {

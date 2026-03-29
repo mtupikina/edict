@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, loggedInGuard } from './core/guards/auth.guard';
+import { studentScopeGuard } from './core/guards/student-scope.guard';
 
 export const routes: Routes = [
   {
@@ -10,6 +11,27 @@ export const routes: Routes = [
       ),
     canActivate: [authGuard],
     children: [
+      {
+        path: 'student/:studentId',
+        canActivate: [studentScopeGuard],
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            loadComponent: () =>
+              import('./features/check-words/check-words.component').then(
+                (m) => m.CheckWordsComponent,
+              ),
+          },
+          {
+            path: 'words',
+            loadComponent: () =>
+              import('./features/words/words-list/words-list.component').then(
+                (m) => m.WordsListComponent,
+              ),
+          },
+        ],
+      },
       {
         path: '',
         pathMatch: 'full',

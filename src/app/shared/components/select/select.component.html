@@ -36,7 +36,24 @@
     (keydown)="onDropdownKeydown($event)"
     tabindex="-1"
   >
+    @if (zFilterable()) {
+      <div class="sticky top-0 z-10 border-b border-border bg-popover px-1.5 pb-2 pt-1.5">
+        <input
+          #filterInput
+          type="search"
+          autocomplete="off"
+          [attr.aria-label]="zFilterPlaceholder()"
+          [placeholder]="zFilterPlaceholder()"
+          (input)="onFilterInput($event)"
+          (keydown)="onFilterInputKeydown($event)"
+          class="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs shadow-xs outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        />
+      </div>
+    }
     <div class="p-1">
+      @if (zFilterable() && filterQuery().trim() && visibleItemsCount() === 0) {
+        <div class="py-2 text-center text-xs text-muted-foreground">No matches</div>
+      }
       <ng-content />
     </div>
   </div>

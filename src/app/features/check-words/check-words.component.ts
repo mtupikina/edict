@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { ZardButtonComponent } from '@/shared/components/button';
 import { ZardInputDirective } from '@/shared/components/input';
@@ -11,6 +12,8 @@ import {
   ToVerifyWord,
   WordVerifyUpdate,
 } from './models/check-words.model';
+import { shouldNavigateToDefaultTutorRoute } from '../../core/components/app-layout/session-default-route.util';
+import { SessionContextService } from '../../core/services/session-context.service';
 import { CheckWordsService } from './services/check-words.service';
 import { WordsService } from '../words/services/words.service';
 
@@ -30,6 +33,8 @@ import { WordsService } from '../words/services/words.service';
 export class CheckWordsComponent {
   private readonly checkWordsService = inject(CheckWordsService);
   private readonly wordsService = inject(WordsService);
+  protected readonly sessionContext = inject(SessionContextService);
+  private readonly router = inject(Router);
 
   protected toVerifyList = signal<ToVerifyWord[]>([]);
   protected quizWords = signal<QuizWord[]>([]);
@@ -43,7 +48,73 @@ export class CheckWordsComponent {
   /** Keys of masked word/translation that are revealed by tap (for mobile). */
   protected revealedKeys = signal<Set<string>>(new Set());
 
+  /**
+   * Avoids duplicate GETs when the session effect re-runs in the same context (e.g. `canLoadWords`
+   * flips true and `selectedStudentId` updates one tick apart).
+   */
+  private lastToVerifySessionKey: string | null = null;
+
   constructor() {
+    effect(() => {
+      this.sessionContext.session();
+      this.sessionContext.routeSyncGeneration();
+      this.sessionContext.mode();
+      this.sessionContext.selectedStudentId();
+      this.sessionContext.canLoadWords();
+      if (!this.sessionContext.canLoadWords()) {
+        untracked(() => {
+          this.lastToVerifySessionKey = null;
+        });
+        return;
+      }
+      untracked(() => this.loadToVerifyListIfSessionContextChanged());
+    });
+  }
+
+  /**
+   * Aligns dedup key with words API scope: on `/student/:id` routes, tutor scope follows the
+   * URL so we do not briefly treat the view as "self" before `syncModeFromUrl` runs.
+   */
+  private toVerifyLoadContextKey(): string {
+    const sess = this.sessionContext.session();
+    const path = this.router.url.split('?')[0];
+    const m = path.match(/^\/student\/([^/]+)(?:\/(words))?$/);
+    if (m && sess?.showTutorMode === true) {
+      return `tutor:${m[1]}`;
+    }
+    const mode = this.sessionContext.mode();
+    const sid = this.sessionContext.selectedStudentId();
+    return `${mode}:${sid ?? ''}`;
+  }
+
+  /**
+   * When session loads on `/` or `/words`, app layout immediately redirects tutors to
+   * `/student/:firstId`. Skip verify-list until that navigation finishes to avoid a stray
+   * self-scope request before the URL matches tutor scope.
+   */
+  private shouldSkipVerifyLoadPendingTutorRedirect(): boolean {
+    const sess = this.sessionContext.session();
+    if (!sess) {
+      return false;
+    }
+    return shouldNavigateToDefaultTutorRoute({
+      fullUrl: this.router.url,
+      showTutorMode: sess.showTutorMode,
+      showStudentMode: sess.showStudentMode,
+      studentCount: sess.students.length,
+    });
+  }
+
+  /** Loads from session-driven effect only; skips if load context unchanged. */
+  private loadToVerifyListIfSessionContextChanged(): void {
+    if (this.shouldSkipVerifyLoadPendingTutorRedirect()) {
+      return;
+    }
+    const key = this.toVerifyLoadContextKey();
+    if (key === this.lastToVerifySessionKey) {
+      return;
+    }
+    this.lastToVerifySessionKey = key;
     this.loadToVerifyList();
   }
 
