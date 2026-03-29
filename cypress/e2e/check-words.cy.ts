@@ -121,7 +121,16 @@ describe('Check words (quiz)', () => {
       cy.get('@submitQuiz')
         .its('request.body')
         .should('deep.equal', {
-          updates: [{ wordId: 'id1', canEToU: true, canUToE: true, toVerifyNextTime: false }],
+          updates: [
+            {
+              wordId: 'id1',
+              word: 'a',
+              translation: 'а',
+              canEToU: true,
+              canUToE: true,
+              toVerifyNextTime: false,
+            },
+          ],
         });
     });
   });
