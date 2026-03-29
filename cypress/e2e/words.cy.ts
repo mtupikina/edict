@@ -1,7 +1,8 @@
+import { E2E_TUTOR_STUDENT_ID } from '../support/commands';
+
 /**
  * E2E: Words — list, add, edit, delete with stubbed API.
- * Requires authenticated user (cy.login()) and intercepts for words API.
- * Intercepts must target the API host (localhost:3001) only, so the app's /words document request returns HTML.
+ * List/sort uses self `/words`; mutations need tutor session + `/student/:id/words` (`canWriteWords`).
  */
 const API_WORDS = 'http://localhost:3001/words*';
 const emptyPage = { items: [], nextCursor: null, hasMore: false, totalCount: 0 };
@@ -53,11 +54,11 @@ describe('Words', () => {
   describe('add word', () => {
     it('opens add form and submits new word', () => {
       stubGetWords(emptyPage);
-      cy.intercept('POST', 'http://localhost:3001/words', (req) => {
+      cy.intercept('POST', 'http://localhost:3001/words*', (req) => {
         req.reply({ statusCode: 201, body: { _id: 'new-1', word: 'test', translation: 'prueba' } });
       }).as('postWord');
-      cy.login();
-      cy.visit('/words');
+      cy.login({ asTutor: true });
+      cy.visit(`/student/${E2E_TUTOR_STUDENT_ID}/words`);
       cy.wait('@getWords');
       cy.get('[data-testid="add-word-button"]').click();
       cy.contains('label', 'Word').parent().find('input').should('be.visible').type('test');
@@ -69,14 +70,14 @@ describe('Words', () => {
 
     it('sends create request without toVerifyNextTime (backend sets it true for new words)', () => {
       stubGetWords(emptyPage);
-      cy.intercept('POST', 'http://localhost:3001/words', (req) => {
+      cy.intercept('POST', 'http://localhost:3001/words*', (req) => {
         expect(req.body).to.have.property('word');
         expect(req.body).to.have.property('translation');
         expect(req.body).to.not.have.property('toVerifyNextTime');
         req.reply({ statusCode: 201, body: { _id: 'new-1', word: 'x', translation: 'y', toVerifyNextTime: true } });
       }).as('postWord');
-      cy.login();
-      cy.visit('/words');
+      cy.login({ asTutor: true });
+      cy.visit(`/student/${E2E_TUTOR_STUDENT_ID}/words`);
       cy.wait('@getWords');
       cy.get('[data-testid="add-word-button"]').click();
       cy.contains('label', 'Word').parent().find('input').should('be.visible').type('x');
@@ -87,8 +88,8 @@ describe('Words', () => {
 
     it('shows validation error when word is empty', () => {
       stubGetWords(emptyPage);
-      cy.login();
-      cy.visit('/words');
+      cy.login({ asTutor: true });
+      cy.visit(`/student/${E2E_TUTOR_STUDENT_ID}/words`);
       cy.wait('@getWords');
       cy.get('[data-testid="add-word-button"]').click();
       cy.contains('label', 'Word').parent().find('input').should('be.visible').clear();
@@ -101,11 +102,11 @@ describe('Words', () => {
     it('opens edit form and saves changes', () => {
       const items = [{ _id: 'edit-1', word: 'foo', translation: 'bar' }];
       stubGetWords({ items, nextCursor: null, hasMore: false, totalCount: 1 });
-      cy.intercept('PATCH', 'http://localhost:3001/words/edit-1', (req) => {
+      cy.intercept('PATCH', 'http://localhost:3001/words/edit-1*', (req) => {
         req.reply({ body: { _id: 'edit-1', word: 'foo updated', translation: 'bar' } });
       }).as('patchWord');
-      cy.login();
-      cy.visit('/words');
+      cy.login({ asTutor: true });
+      cy.visit(`/student/${E2E_TUTOR_STUDENT_ID}/words`);
       cy.wait('@getWords');
       cy.contains('foo').should('be.visible');
       cy.get('[data-testid="edit-word-button"], button[title="Edit"]').first().scrollIntoView().click({ force: true });
@@ -120,9 +121,9 @@ describe('Words', () => {
     it('confirms and deletes word', () => {
       const items = [{ _id: 'del-1', word: 'remove', translation: 'eliminar' }];
       stubGetWords({ items, nextCursor: null, hasMore: false, totalCount: 1 });
-      cy.intercept('DELETE', 'http://localhost:3001/words/del-1', { statusCode: 200, body: { message: 'Deleted' } }).as('deleteWord');
-      cy.login();
-      cy.visit('/words');
+      cy.intercept('DELETE', 'http://localhost:3001/words/del-1*', { statusCode: 200, body: { message: 'Deleted' } }).as('deleteWord');
+      cy.login({ asTutor: true });
+      cy.visit(`/student/${E2E_TUTOR_STUDENT_ID}/words`);
       cy.wait('@getWords');
       cy.contains('remove').should('be.visible');
       cy.get('[data-testid="delete-word-button"], button[title="Delete"]').first().scrollIntoView().click({ force: true });

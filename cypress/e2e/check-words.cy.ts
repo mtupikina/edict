@@ -1,6 +1,8 @@
+import { E2E_TUTOR_STUDENT_ID } from '../support/commands';
+
 /**
  * E2E: Check words (quiz) — to-verify list, generate quiz, mark answers, submit.
- * Route: / (default). Requires authenticated user (cy.login()) and intercepts for words/verify API.
+ * Route: / (default) for self/student flow; tutor write paths use `/student/:id` (see Submit tests).
  */
 describe('Check words (quiz)', () => {
   beforeEach(() => {
@@ -49,14 +51,14 @@ describe('Check words (quiz)', () => {
 
   describe('generate quiz', () => {
     it('generates quiz and shows quiz section with words', () => {
-      cy.intercept('GET', 'http://localhost:3001/words/verify/list', []).as('getToVerifyList');
+      cy.intercept('GET', '**/words/verify/list*', []).as('getToVerifyList');
       const quizWords = [
         { _id: 'q1', word: 'cat', translation: 'кіт', canEToU: false, canUToE: false, toVerifyNextTime: false },
         { _id: 'q2', word: 'dog', translation: 'пес', canEToU: false, canUToE: false, toVerifyNextTime: false },
       ];
-      cy.intercept('POST', 'http://localhost:3001/words/verify/generate', quizWords).as('generateQuiz');
-      cy.login();
-      cy.visit('/');
+      cy.intercept('POST', '**/words/verify/generate*', quizWords).as('generateQuiz');
+      cy.login({ asTutor: true });
+      cy.visit(`/student/${E2E_TUTOR_STUDENT_ID}`);
       cy.wait('@getToVerifyList');
       cy.get('#quiz-count').should('exist').clear().type('5');
       cy.contains('button', 'Generate').click();
@@ -84,14 +86,14 @@ describe('Check words (quiz)', () => {
 
   describe('quiz submit', () => {
     it('submits quiz and returns to generate section', () => {
-      cy.intercept('GET', 'http://localhost:3001/words/verify/list', []).as('getToVerifyList');
+      cy.intercept('GET', '**/words/verify/list*', []).as('getToVerifyList');
       const quizWords = [
         { _id: 'q1', word: 'test', translation: 'тест', canEToU: true, canUToE: false, toVerifyNextTime: true },
       ];
-      cy.intercept('POST', 'http://localhost:3001/words/verify/generate', quizWords).as('generateQuiz');
-      cy.intercept('POST', 'http://localhost:3001/words/verify/submit', { statusCode: 200 }).as('submitQuiz');
-      cy.login();
-      cy.visit('/');
+      cy.intercept('POST', '**/words/verify/generate*', quizWords).as('generateQuiz');
+      cy.intercept('POST', '**/words/verify/submit*', { statusCode: 200 }).as('submitQuiz');
+      cy.login({ asTutor: true });
+      cy.visit(`/student/${E2E_TUTOR_STUDENT_ID}`);
       cy.wait('@getToVerifyList');
       cy.contains('button', 'Generate').click();
       cy.wait('@generateQuiz');
@@ -104,14 +106,14 @@ describe('Check words (quiz)', () => {
     });
 
     it('sends updates in submit request', () => {
-      cy.intercept('GET', 'http://localhost:3001/words/verify/list', []).as('getToVerifyList');
+      cy.intercept('GET', '**/words/verify/list*', []).as('getToVerifyList');
       const quizWords = [
         { _id: 'id1', word: 'a', translation: 'а', canEToU: true, canUToE: true, toVerifyNextTime: false },
       ];
-      cy.intercept('POST', 'http://localhost:3001/words/verify/generate', quizWords).as('generateQuiz');
-      cy.intercept('POST', 'http://localhost:3001/words/verify/submit', { statusCode: 200 }).as('submitQuiz');
-      cy.login();
-      cy.visit('/');
+      cy.intercept('POST', '**/words/verify/generate*', quizWords).as('generateQuiz');
+      cy.intercept('POST', '**/words/verify/submit*', { statusCode: 200 }).as('submitQuiz');
+      cy.login({ asTutor: true });
+      cy.visit(`/student/${E2E_TUTOR_STUDENT_ID}`);
       cy.wait('@getToVerifyList');
       cy.contains('button', 'Generate').click();
       cy.wait('@generateQuiz');

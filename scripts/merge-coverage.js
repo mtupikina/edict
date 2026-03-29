@@ -2,7 +2,8 @@
 /**
  * Orchestrates out-of-the-box coverage merge (no custom merge logic).
  *
- * 1. Cypress → LCOV:  nyc report --reporter=lcovonly  (reads .nyc_output/out.json)
+ * 1. Cypress → LCOV:  nyc report --reporter=lcovonly  (writes lcov.info under
+ *    coverage/edict/nyc-lcov/; NYC does not print LCOV to stdout)
  * 2. Merge:           lcov-result-merger  (merges unit.lcov + cypress.lcov)
  * 3. HTML:            lcov-viewer  (generates coverage/combined/)
  *
@@ -18,6 +19,7 @@ const { execSync } = require('child_process');
 const root = path.resolve(__dirname, '..');
 const coverageEdict = path.join(root, 'coverage', 'edict');
 const cypressLcov = path.join(coverageEdict, 'cypress.lcov');
+const nycLcovDir = path.join(coverageEdict, 'nyc-lcov');
 const mergedLcov = path.join(root, 'coverage', 'merged.lcov');
 const reportDir = path.join(root, 'coverage', 'combined');
 const cypressNycOut = path.join(root, '.nyc_output', 'out.json');
@@ -33,11 +35,16 @@ fs.mkdirSync(coverageEdict, { recursive: true });
 // 1. Convert Cypress Istanbul → LCOV (out-of-the-box: nyc)
 if (fs.existsSync(cypressNycOut) && fs.statSync(cypressNycOut).size > 0) {
   try {
-    execSync(`npx nyc report --reporter=lcovonly > "${cypressLcov}"`, {
+    fs.rmSync(nycLcovDir, { recursive: true, force: true });
+    fs.mkdirSync(nycLcovDir, { recursive: true });
+    execSync(`npx nyc report --reporter=lcovonly --report-dir="${nycLcovDir}"`, {
       cwd: root,
-      stdio: 'pipe',
-      encoding: 'utf8',
+      stdio: 'inherit',
     });
+    const nycLcovInfo = path.join(nycLcovDir, 'lcov.info');
+    if (fs.existsSync(nycLcovInfo) && fs.statSync(nycLcovInfo).size > 0) {
+      fs.copyFileSync(nycLcovInfo, cypressLcov);
+    }
   } catch {
     // nyc can fail if .nyc_output has no usable data; continue with unit only
   }

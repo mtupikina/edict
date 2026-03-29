@@ -75,7 +75,7 @@ describe('Auth', () => {
     cy.login();
     cy.visit('/');
     cy.url().should('not.include', '/login');
-    cy.get('button[title="Log out"]').click();
+    cy.get('button[title="Log out"]').filter(':visible').first().click();
     cy.url().should('include', '/login');
     cy.contains('Login with Google').should('be.visible');
   });

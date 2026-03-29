@@ -38,10 +38,13 @@ describe('CheckWordsService', () => {
 
   it('getToVerifyList should issue a new GET on each call', () => {
     const list: ToVerifyWord[] = [];
-    service.getToVerifyList().subscribe();
+    const received: ToVerifyWord[][] = [];
+    service.getToVerifyList().subscribe((data) => received.push(data));
     httpMock.expectOne(`${BASE}/verify/list`).flush(list);
-    service.getToVerifyList().subscribe();
+    service.getToVerifyList().subscribe((data) => received.push(data));
     httpMock.expectOne(`${BASE}/verify/list`).flush(list);
+    expect(received.length).toBe(2);
+    expect(received).toEqual([list, list]);
   });
 
   it('generateQuiz should POST verify/generate with count', () => {
