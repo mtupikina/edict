@@ -25,6 +25,8 @@ export interface QuizWord {
 /** Update payload for a single word on quiz submit. */
 export interface WordVerifyUpdate {
   wordId: string;
+  word: string;
+  translation?: string;
   canEToU?: boolean;
   canUToE?: boolean;
   toVerifyNextTime?: boolean;

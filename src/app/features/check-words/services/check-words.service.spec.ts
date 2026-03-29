@@ -58,7 +58,14 @@ describe('CheckWordsService', () => {
 
   it('submitQuiz should POST verify/submit with updates', () => {
     const updates = [
-      { wordId: '1', canEToU: true, canUToE: false, toVerifyNextTime: true },
+      {
+        wordId: '1',
+        word: 'hello',
+        translation: 'привіт',
+        canEToU: true,
+        canUToE: false,
+        toVerifyNextTime: true,
+      },
     ];
     service.submitQuiz(updates).subscribe();
     const req = httpMock.expectOne(`${BASE}/verify/submit`);

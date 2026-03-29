@@ -247,6 +247,10 @@ describe('CheckWordsComponent', () => {
     expect(checkWordsService.submitQuiz).toHaveBeenCalledWith(
       quizWords.map((w) => ({
         wordId: w._id,
+        word: w.word,
+        ...(w.translation !== undefined && w.translation !== ''
+          ? { translation: w.translation }
+          : {}),
         canEToU: w.canEToU ?? false,
         canUToE: w.canUToE ?? false,
         toVerifyNextTime: w.toVerifyNextTime ?? false,

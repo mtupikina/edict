@@ -197,6 +197,10 @@ export class CheckWordsComponent {
     if (words.length === 0) return;
     const updates: WordVerifyUpdate[] = words.map((w) => ({
       wordId: w._id,
+      word: w.word,
+      ...(w.translation !== undefined && w.translation !== ''
+        ? { translation: w.translation }
+        : {}),
       canEToU: w.canEToU ?? false,
       canUToE: w.canUToE ?? false,
       toVerifyNextTime: w.toVerifyNextTime ?? false,
