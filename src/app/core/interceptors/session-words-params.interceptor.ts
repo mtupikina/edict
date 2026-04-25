@@ -5,10 +5,10 @@ import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { SessionContextService } from '../services/session-context.service';
 
-/** Tutee id when the app URL is `/student/:id` or `/student/:id/words`. */
+/** Tutee id when the app URL is `/student/:id`, `/student/:id/words`, or `/student/:id/progress`. */
 function tuteeIdFromAppUrl(routerUrl: string): string | null {
   const path = routerUrl.split('?')[0];
-  const m = path.match(/^\/student\/([^/]+)(?:\/(words))?$/);
+  const m = path.match(/^\/student\/([^/]+)(?:\/(words|progress))?$/);
   return m ? m[1] : null;
 }
 

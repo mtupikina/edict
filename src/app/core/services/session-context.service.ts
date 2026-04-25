@@ -100,11 +100,12 @@ export class SessionContextService {
 
   /**
    * Maps URL path to tutor/student mode and selected tutee id.
-   * `/student/:studentId` and `/student/:studentId/words` → tutor + id; `/`, `/words` → student.
+   * `/student/:studentId`, `/student/:studentId/words`, `/student/:studentId/progress` → tutor + id;
+   * `/`, `/words`, `/progress` → student.
    */
   syncModeFromUrl(url: string): void {
     const path = url.split('?')[0];
-    const m = path.match(/^\/student\/([^/]+)(?:\/(words))?$/);
+    const m = path.match(/^\/student\/([^/]+)(?:\/(words|progress))?$/);
     if (m) {
       this.mode.set('tutor');
       this.selectedStudentId.set(m[1]);

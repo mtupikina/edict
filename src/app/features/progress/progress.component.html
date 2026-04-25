@@ -1,0 +1,90 @@
+<div class="max-w-4xl mx-auto px-3 py-4 sm:px-4 sm:py-6">
+  <div class="mb-6">
+    <h1 class="text-xl font-bold text-slate-800 sm:text-2xl">Progress</h1>
+    <p class="text-sm text-slate-500 mt-1">Track learning activity and quiz performance over time</p>
+  </div>
+
+  <!-- Date range filter -->
+  <div class="mb-6 flex flex-wrap items-center gap-2">
+    <span class="text-xs font-medium text-slate-500 mr-1">Period</span>
+    @for (opt of presetOptions; track opt.value) {
+      <button
+        type="button"
+        (click)="setPreset(opt.value)"
+        [class.bg-teal-600]="preset() === opt.value"
+        [class.text-white]="preset() === opt.value"
+        [class.border-teal-600]="preset() === opt.value"
+        [class.text-slate-600]="preset() !== opt.value"
+        [class.border-slate-300]="preset() !== opt.value"
+        class="rounded-full border px-3 py-1 text-xs transition-colors hover:border-teal-500 hover:text-teal-700"
+      >
+        {{ opt.label }}
+      </button>
+    }
+
+    @if (preset() === 'custom') {
+      <div class="flex flex-wrap items-center gap-2 mt-2 w-full sm:w-auto sm:mt-0">
+        <input
+          type="date"
+          [ngModel]="customFrom()"
+          (ngModelChange)="customFrom.set($event)"
+          class="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+          aria-label="From date"
+        />
+        <span class="text-xs text-slate-400">to</span>
+        <input
+          type="date"
+          [ngModel]="customTo()"
+          (ngModelChange)="customTo.set($event)"
+          class="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+          aria-label="To date"
+        />
+      </div>
+    }
+  </div>
+
+  <!-- Charts grid -->
+  <div class="flex flex-col gap-4 sm:gap-6">
+    <!-- Row 1: words over time (full width) -->
+    <app-words-over-time-chart
+      [from]="from()"
+      [to]="to()"
+      [studentId]="studentId()"
+    />
+
+    <!-- Row 2: part of speech + quiz frequency (side by side on md+) -->
+    <div class="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
+      <app-parts-of-speech-chart
+        [from]="from()"
+        [to]="to()"
+        [studentId]="studentId()"
+      />
+      <app-quiz-frequency-chart
+        [from]="from()"
+        [to]="to()"
+        [studentId]="studentId()"
+      />
+    </div>
+
+    <!-- Row 3: quiz results (full width) -->
+    <app-quiz-results-chart
+      [from]="from()"
+      [to]="to()"
+      [studentId]="studentId()"
+    />
+
+    <!-- Row 4: mastery over time (full width) -->
+    <app-mastery-chart
+      [from]="from()"
+      [to]="to()"
+      [studentId]="studentId()"
+    />
+
+    <!-- Row 5: problematic words (full width) -->
+    <app-problematic-words-chart
+      [from]="from()"
+      [to]="to()"
+      [studentId]="studentId()"
+    />
+  </div>
+</div>

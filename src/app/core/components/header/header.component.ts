@@ -99,6 +99,20 @@ export class HeaderComponent {
     return this.tutorHomePath(true);
   }
 
+  /** Progress: `/progress` or `/student/:id/progress`. */
+  protected progressLink(): string[] {
+    return this.tutorProgressPath();
+  }
+
+  private tutorProgressPath(): string[] {
+    const s = this.session.session();
+    const id = this.session.selectedStudentId();
+    if (this.session.mode() === 'tutor' && s?.showTutorMode && id) {
+      return ['/student', id, 'progress'];
+    }
+    return ['/progress'];
+  }
+
   private shouldPreserveSelfVocabOnNavLinks(): boolean {
     const s = this.session.session();
     if (!s?.showTutorMode || !s.showStudentMode || this.session.mode() !== 'student') {

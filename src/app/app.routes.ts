@@ -30,6 +30,13 @@ export const routes: Routes = [
                 (m) => m.WordsListComponent,
               ),
           },
+          {
+            path: 'progress',
+            loadComponent: () =>
+              import('./features/progress/progress.component').then(
+                (m) => m.ProgressComponent,
+              ),
+          },
         ],
       },
       {
@@ -45,6 +52,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/words/words-list/words-list.component').then(
             (m) => m.WordsListComponent,
+          ),
+      },
+      {
+        path: 'progress',
+        loadComponent: () =>
+          import('./features/progress/progress.component').then(
+            (m) => m.ProgressComponent,
           ),
       },
     ],
