@@ -28,6 +28,9 @@ yarn-error.log
 !.vscode/extensions.json
 .history/*
 
+# Vercel (local `vercel pull` / link; CI creates this each run)
+.vercel
+
 # Miscellaneous
 /.angular/cache
 .sass-cache/
