@@ -1,14 +1,9 @@
-# Deploy frontend on push to main: lint → test → Vercel build in CI → deploy prebuilt
-# (API_URL from GitHub Actions only; Vercel does not rebuild, so no drift from empty Vercel env.)
+# Deploy frontend on push to main: lint → test → build → deploy to Vercel
 name: Deploy frontend
 
 on:
   push:
     branches: [main]
-
-env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
   deploy:
@@ -35,16 +30,16 @@ jobs:
       - name: Test
         run: npm run test:ci
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Pull Vercel environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Vercel build (production; bakes API_URL from GitHub)
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build for production
+        run: npm run build:prod
         env:
           API_URL: ${{ secrets.API_URL }}
 
-      - name: Vercel deploy (prebuilt; no remote rebuild)
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
+          vercel-args: '--prod'
