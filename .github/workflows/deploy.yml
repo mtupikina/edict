@@ -38,7 +38,8 @@ jobs:
       # Deploy only the Angular browser output. Skip Vercel's remote build (avoids
       # duplicating dashboard / vercel.json build settings and npm ci on Vercel).
       - name: Prepare Vercel static bundle
-        run: jq '. + {"buildCommand": ""}' vercel.json > dist/edict/browser/vercel.json
+        run: |
+          jq '. + {"buildCommand": ""}' vercel.json > dist/edict/browser/vercel.json
 
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v42
