@@ -35,13 +35,18 @@ jobs:
         env:
           API_URL: ${{ secrets.API_URL }}
 
+      # Deploy only the Angular browser output. Skip Vercel's remote build (avoids
+      # duplicating dashboard / vercel.json build settings and npm ci on Vercel).
+      - name: Prepare Vercel static bundle
+        run: jq '. + {"buildCommand": ""}' vercel.json > dist/edict/browser/vercel.json
+
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v42
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./
+          working-directory: dist/edict/browser
           vercel-args: '--prod'
           # v25 of this action pinned CLI 25.x; Vercel now requires ≥47.2.2 for deploy APIs.
           vercel-version: latest
