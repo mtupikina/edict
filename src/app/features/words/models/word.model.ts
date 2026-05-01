@@ -50,5 +50,4 @@ export interface WordsPage {
   totalCount: number;
 }
 
-/** `POST /words/enrich` success `data` — same shape as {@link WordContent}. */
 export type AiEnrichedWordData = WordContent;
