@@ -13,8 +13,11 @@ export const PART_OF_SPEECH_OPTIONS: readonly string[] = [
   'v',
 ] as const;
 
-export interface Word {
-  _id: string;
+/**
+ * Lexical / content fields shared by API word documents and AI enrich payloads
+ * (aligned with backend `Word` content + `AiEnrichedWordDto`).
+ */
+export interface WordContent {
   word: string;
   translation?: string;
   description?: string;
@@ -27,6 +30,10 @@ export interface Word {
   plural?: string;
   simplePast?: string;
   pastParticiple?: string;
+}
+
+export interface Word extends WordContent {
+  _id: string;
   canSpell?: boolean;
   canEToU?: boolean;
   canUToE?: boolean;
@@ -42,3 +49,6 @@ export interface WordsPage {
   hasMore: boolean;
   totalCount: number;
 }
+
+/** `POST /words/enrich` success `data` — same shape as {@link WordContent}. */
+export type AiEnrichedWordData = WordContent;

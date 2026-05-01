@@ -1,6 +1,6 @@
 import { FormControl } from '@angular/forms';
 
-import { Word } from '../models/word.model';
+import { AiEnrichedWordData, Word } from '../models/word.model';
 
 /** Form value shape (array fields as comma/newline-separated strings). */
 export interface WordFormValue {
@@ -72,6 +72,24 @@ function parseNewlineSeparated(s: string): string[] {
 function trimOrUndefined(s: string): string | undefined {
   const t = s.trim();
   return t === '' ? undefined : t;
+}
+
+/** Maps AI enrich response into form fields (user may edit before save). */
+export function aiEnrichedDataToFormValue(data: AiEnrichedWordData): WordFormValue {
+  return {
+    word: data.word,
+    translation: data.translation ?? '',
+    partOfSpeech: data.partOfSpeech ?? '',
+    transcription: data.transcription ?? '',
+    description: data.description ?? '',
+    synonymsText: (data.synonyms ?? []).join(', '),
+    antonymsText: (data.antonyms ?? []).join(', '),
+    examplesText: (data.examples ?? []).join('\n'),
+    tagsText: (data.tags ?? []).join(', '),
+    plural: data.plural ?? '',
+    simplePast: data.simplePast ?? '',
+    pastParticiple: data.pastParticiple ?? '',
+  };
 }
 
 export function formValueToPayload(raw: WordFormValue): Partial<Word> {

@@ -12,7 +12,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable, of } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs';
 
 import { ZardButtonComponent } from '@/shared/components/button';
 import { ZardIconComponent } from '@/shared/components/icon';
@@ -26,6 +26,7 @@ import {
   WORD_FORM_FIELD_CONFIG,
 } from './word-form.config';
 import {
+  aiEnrichedDataToFormValue,
   DEFAULT_FORM_VALUE,
   formValueToPayload,
   wordToFormValue,
@@ -61,6 +62,10 @@ export class WordFormDialogComponent {
   protected readonly partOfSpeechOptions = PART_OF_SPEECH_OPTIONS;
   protected showAddForm = signal(false);
   protected submitting = signal(false);
+  /** True while `POST /words/enrich` is in flight. */
+  protected enrichingAi = signal(false);
+  /** True when the word field has any non-whitespace text (show AI assist control). */
+  protected wordEnteredForAi = signal(false);
   protected error = signal<string | null>(null);
   /** Up to 7 existing words matching the word input (for duplicate hint). Empty when no search or no matches. */
   protected searchHints = signal<Word[]>([]);
@@ -116,6 +121,16 @@ export class WordFormDialogComponent {
         if (w) this.form.patchValue(wordToFormValue(w));
       }
     });
+
+    this.form
+      .get('word')
+      ?.valueChanges.pipe(
+        startWith(this.form.get('word')?.value ?? ''),
+        map((v) => !!(typeof v === 'string' && v.trim())),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((hasText) => this.wordEnteredForAi.set(hasText));
 
     this.form
       .get('word')
@@ -197,6 +212,29 @@ export class WordFormDialogComponent {
     this.searchHints.set([]);
   }
 
+  protected onEnrichClick(event?: Event): void {
+    event?.stopPropagation();
+    const raw = this.form.get('word')?.value ?? '';
+    const term = typeof raw === 'string' ? raw.trim() : '';
+    if (!term || this.enrichingAi() || this.submitting()) return;
+
+    this.enrichingAi.set(true);
+    this.error.set(null);
+    this.wordsService
+      .enrich(term)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.form.patchValue(aiEnrichedDataToFormValue(res.data));
+          this.enrichingAi.set(false);
+        },
+        error: (err) => {
+          this.error.set(this.getApiErrorMessage(err) ?? 'AI enrichment failed');
+          this.enrichingAi.set(false);
+        },
+      });
+  }
+
   protected close(): void {
     this.showAddForm.set(false);
     this.dialogCancel.emit();
@@ -275,9 +313,14 @@ export class WordFormDialogComponent {
   }
 
   private getApiErrorMessage(err: {
-    error?: { message?: string | string[] };
+    error?: {
+      message?: string | string[];
+      error?: { message?: string };
+    };
     message?: string;
   }): string | null {
+    const nested = err?.error?.error?.message;
+    if (typeof nested === 'string' && nested.length > 0) return nested;
     const msg = err?.error?.message;
     if (Array.isArray(msg) && msg.length > 0) return msg.join(' ');
     if (typeof msg === 'string') return msg;

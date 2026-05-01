@@ -28,7 +28,44 @@
           }
           <div class="relative">
             <label for="word-form-word" class="block text-sm font-medium text-slate-700 mb-1">Word *</label>
-            <input #wordInputRef id="word-form-word" z-input type="text" formControlName="word" class="w-full" required autocomplete="off" [zStatus]="isControlInvalidAndTouched('word') ? 'error' : undefined" (focus)="onWordInputFocus()" (blur)="onWordInputBlur()" (keydown.escape)="onWordInputEscape($event)" />
+            <div class="relative">
+              <input
+                #wordInputRef
+                id="word-form-word"
+                z-input
+                type="text"
+                formControlName="word"
+                class="w-full"
+                [class.pr-11]="wordEnteredForAi()"
+                required
+                autocomplete="off"
+                [zStatus]="isControlInvalidAndTouched('word') ? 'error' : undefined"
+                (focus)="onWordInputFocus()"
+                (blur)="onWordInputBlur()"
+                (keydown.escape)="onWordInputEscape($event)"
+              />
+              @if (wordEnteredForAi()) {
+                <button
+                  z-button
+                  type="button"
+                  zType="ghost"
+                  zSize="sm"
+                  class="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 min-h-9 min-w-9 p-0 shrink-0 text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+                  [zDisabled]="enrichingAi() || submitting()"
+                  [attr.aria-busy]="enrichingAi()"
+                  aria-label="Fill form with AI suggestions based on this word"
+                  title="Fill form with AI suggestions based on this word"
+                  data-testid="word-form-ai-enrich"
+                  (click)="onEnrichClick($event)"
+                >
+                  @if (enrichingAi()) {
+                    <z-icon zType="loader-circle" class="w-5 h-5 animate-spin" />
+                  } @else {
+                    <z-icon zType="sparkles" class="w-5 h-5" />
+                  }
+                </button>
+              }
+            </div>
             @if (getControlError('word'); as err) {
               <p class="text-destructive text-sm mt-1">{{ err }}</p>
             }

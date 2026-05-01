@@ -3,9 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
-import { Word, WordsPage } from '../models/word.model';
+import { AiEnrichedWordData, Word, WordsPage } from '../models/word.model';
 
 const BASE = `${environment.apiUrl}/words`;
+
+export interface WordEnrichApiResponse {
+  success: true;
+  data: AiEnrichedWordData;
+}
 
 @Injectable({ providedIn: 'root' })
 export class WordsService {
@@ -42,5 +47,10 @@ export class WordsService {
 
   delete(id: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${BASE}/${id}`);
+  }
+
+  /** Calls `POST /words/enrich` with the current headword; fills form via resolved `data`. */
+  enrich(word: string): Observable<WordEnrichApiResponse> {
+    return this.http.post<WordEnrichApiResponse>(`${BASE}/enrich`, { word });
   }
 }
