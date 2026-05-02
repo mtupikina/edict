@@ -18,6 +18,16 @@
         />
         <span class="text-slate-600">Show translations</span>
       </div>
+      <button
+        z-button
+        zType="outline"
+        type="button"
+        class="inline-flex shrink-0 items-center gap-2"
+        (click)="printCurrentWords()"
+        [disabled]="!hasWordsToPrint()"
+      >
+        <z-icon zType="print" />
+      </button>
     </div>
   </div>
 

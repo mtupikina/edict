@@ -3,6 +3,8 @@ export interface ToVerifyWord {
   _id: string;
   word: string;
   translation?: string;
+  /** Usage examples when present on the word (same as API). */
+  examples?: string[];
   lastVerifiedAt?: string | null;
   canEToU?: boolean;
   canUToE?: boolean;
@@ -15,6 +17,7 @@ export interface QuizWord {
   _id: string;
   word: string;
   translation?: string;
+  examples?: string[];
   canEToU?: boolean;
   canUToE?: boolean;
   toVerifyNextTime?: boolean;

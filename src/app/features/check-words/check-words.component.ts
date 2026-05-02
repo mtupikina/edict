@@ -4,9 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { ZardButtonComponent } from '@/shared/components/button';
+import { ZardIconComponent } from '@/shared/components/icon';
 import { ZardInputDirective } from '@/shared/components/input';
 import { ZardSwitchComponent } from '@/shared/components/switch';
 
+import {
+  checkWordsHasPrintableRows,
+  openCheckWordsPrintWindow,
+} from './helpers/check-words-print.helper';
 import {
   QuizWord,
   ToVerifyWord,
@@ -24,6 +29,7 @@ import { WordsService } from '../words/services/words.service';
     DatePipe,
     FormsModule,
     ZardButtonComponent,
+    ZardIconComponent,
     ZardInputDirective,
     ZardSwitchComponent,
   ],
@@ -218,5 +224,14 @@ export class CheckWordsComponent {
         this.submitting.set(false);
       },
     });
+  }
+
+  /** True when there is at least one word on screen (verify list or active quiz). */
+  protected hasWordsToPrint(): boolean {
+    return checkWordsHasPrintableRows(this.quizWords(), this.toVerifyList());
+  }
+
+  protected printCurrentWords(): void {
+    openCheckWordsPrintWindow(this.quizWords(), this.toVerifyList());
   }
 }

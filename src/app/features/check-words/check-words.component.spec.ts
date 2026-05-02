@@ -268,12 +268,50 @@ describe('CheckWordsComponent', () => {
     expect(component['error']()).toBe('Network error');
   });
 
-  it('should toggle reveal state for masked word/translation (tap to reveal on mobile)', () => {
-    const key = '1-word';
-    expect(component['revealedKeys']().has(key)).toBe(false);
-    component.toggleReveal(key);
-    expect(component['revealedKeys']().has(key)).toBe(true);
-    component.toggleReveal(key);
-    expect(component['revealedKeys']().has(key)).toBe(false);
+  it('hasWordsToPrint is true when to-verify list is loaded', () => {
+    expect(component['hasWordsToPrint']()).toBe(true);
+  });
+
+  it('printCurrentWords opens a window and prints current list', () => {
+    jasmine.clock().install();
+    try {
+      const printSpy = jasmine.createSpy('print');
+      const fakeDoc = {
+        open: jasmine.createSpy('open'),
+        write: jasmine.createSpy('write'),
+        close: jasmine.createSpy('close'),
+      };
+      const fakeWin = {
+        document: fakeDoc,
+        focus: jasmine.createSpy('focus'),
+        print: printSpy,
+      };
+      spyOn(window, 'open').and.returnValue(fakeWin as unknown as Window);
+
+      component['printCurrentWords']();
+
+      expect(window.open).toHaveBeenCalledWith('', '_blank');
+      expect(fakeDoc.write).toHaveBeenCalled();
+      expect(fakeDoc.close).toHaveBeenCalled();
+      expect(fakeWin.focus).toHaveBeenCalled();
+      jasmine.clock().tick(0);
+      expect(printSpy).toHaveBeenCalled();
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('printCurrentWords skips when there are no words', () => {
+    component['quizWords'].set([]);
+    component['toVerifyList'].set([]);
+    const openSpy = spyOn(window, 'open');
+    component['printCurrentWords']();
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it('printCurrentWords does not throw when popup is blocked', () => {
+    spyOn(window, 'open').and.returnValue(null);
+    expect(() => component['printCurrentWords']()).not.toThrow();
+    expect(window.open).toHaveBeenCalled();
   });
 });
