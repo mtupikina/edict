@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, input, output } from '@angular/core';
 
-import { Word } from '../models/word.model';
+import { partOfSpeechLabelFor, Word } from '../models/word.model';
 import { WordsService } from '../services/words.service';
 
 @Component({
@@ -20,6 +20,10 @@ export class WordListItemComponent {
   editRequested = output<Word>();
 
   protected confirmDelete = false;
+
+  protected partOfSpeechLabel(key: string | undefined): string {
+    return partOfSpeechLabelFor(key);
+  }
 
   openEdit(): void {
     this.editRequested.emit(this.word());

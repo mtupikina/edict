@@ -13,6 +13,7 @@ import { Chart, ChartData, ChartOptions, registerables } from 'chart.js';
 import { CHART_LEGEND_LABELS } from '../chart-legend.config';
 import { PartOfSpeechPoint } from '../../models/progress.model';
 import { ProgressService } from '../../services/progress.service';
+import { PART_OF_SPEECH_LABELS } from '@/shared/constants/part-of-speech';
 
 Chart.register(...registerables);
 
@@ -32,17 +33,7 @@ const POS_COLORS = [
 ];
 
 const POS_LABELS: Record<string, string> = {
-  adj: 'Adjective',
-  adv: 'Adverb',
-  conj: 'Conjunction',
-  interj: 'Interjection',
-  n: 'Noun',
-  num: 'Numeral',
-  ph: 'Phrase',
-  'ph v': 'Phrasal Verb',
-  prep: 'Preposition',
-  pron: 'Pronoun',
-  v: 'Verb',
+  ...PART_OF_SPEECH_LABELS,
   unset: 'Unset',
 };
 

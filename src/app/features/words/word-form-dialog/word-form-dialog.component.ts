@@ -19,7 +19,7 @@ import { ZardIconComponent } from '@/shared/components/icon';
 import { ZardInputDirective } from '@/shared/components/input';
 import { ZardSelectImports } from '@/shared/components/select/select.imports';
 
-import { PART_OF_SPEECH_OPTIONS, Word } from '../models/word.model';
+import { PART_OF_SPEECH_LABELS, PART_OF_SPEECH_SELECT_ORDER, Word } from '../models/word.model';
 import { WordsService } from '../services/words.service';
 import {
   getFieldError,
@@ -59,7 +59,10 @@ export class WordFormDialogComponent {
 
   private readonly wordInputRef = viewChild('wordInputRef', { read: ElementRef<HTMLInputElement> });
 
-  protected readonly partOfSpeechOptions = PART_OF_SPEECH_OPTIONS;
+  protected readonly partOfSpeechSelectItems = PART_OF_SPEECH_SELECT_ORDER.map(value => ({
+    value,
+    label: PART_OF_SPEECH_LABELS[value],
+  }));
   protected showAddForm = signal(false);
   protected submitting = signal(false);
   /** True while `POST /words/enrich` is in flight. */

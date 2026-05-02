@@ -1,17 +1,11 @@
-/** Part-of-speech values supported by the API (must match backend PART_OF_SPEECH_VALUES). */
-export const PART_OF_SPEECH_OPTIONS: readonly string[] = [
-  'adj',
-  'adv',
-  'conj',
-  'interj',
-  'n',
-  'num',
-  'ph',
-  'ph v',
-  'prep',
-  'pron',
-  'v',
-] as const;
+export type { PartOfSpeechKey } from '@/shared/constants/part-of-speech';
+export {
+  PART_OF_SPEECH_LABELS,
+  PART_OF_SPEECH_OPTIONS,
+  PART_OF_SPEECH_SELECT_ORDER,
+  isValidPartOfSpeech,
+  partOfSpeechLabelFor,
+} from '@/shared/constants/part-of-speech';
 
 /**
  * Lexical / content fields shared by API word documents and AI enrich payloads

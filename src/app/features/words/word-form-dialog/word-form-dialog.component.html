@@ -104,8 +104,8 @@
             <label for="word-form-partOfSpeech" class="block text-sm font-medium text-slate-700 mb-1">Part of speech</label>
             <z-select id="word-form-partOfSpeech" formControlName="partOfSpeech" zPlaceholder="—" class="w-full">
               <z-select-item [zValue]="''">—</z-select-item>
-              @for (opt of partOfSpeechOptions; track opt) {
-                <z-select-item [zValue]="opt">{{ opt }}</z-select-item>
+              @for (opt of partOfSpeechSelectItems; track opt.value) {
+                <z-select-item [zValue]="opt.value">{{ opt.label }}</z-select-item>
               }
             </z-select>
             @if (getControlError('partOfSpeech'); as err) {

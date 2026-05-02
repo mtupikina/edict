@@ -1,6 +1,6 @@
 import { AbstractControl, ValidatorFn } from '@angular/forms';
 
-import { PART_OF_SPEECH_OPTIONS } from '../models/word.model';
+import { isValidPartOfSpeech } from '@/shared/constants/part-of-speech';
 
 export function requiredTrimmed(): ValidatorFn {
   return (c: AbstractControl) => {
@@ -14,6 +14,7 @@ export function partOfSpeechValidator(): ValidatorFn {
   return (c: AbstractControl) => {
     const v = c.value;
     if (v == null || v === '') return null;
-    return PART_OF_SPEECH_OPTIONS.includes(v) ? null : { partOfSpeech: { value: v } };
+    if (typeof v !== 'string') return { partOfSpeech: { value: v } };
+    return isValidPartOfSpeech(v) ? null : { partOfSpeech: { value: v } };
   };
 }

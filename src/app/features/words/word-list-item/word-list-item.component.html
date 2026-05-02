@@ -6,7 +6,7 @@
         <span class="text-slate-500 ml-2">— {{ word().translation }}</span>
       }
       @if (word().partOfSpeech) {
-        <span class="text-slate-400 text-sm ml-2">({{ word().partOfSpeech }})</span>
+        <span class="text-slate-400 text-sm ml-2">({{ partOfSpeechLabel(word().partOfSpeech) }})</span>
       }
       @if (word().transcription) {
         <span class="text-slate-400 text-sm ml-2">{{ word().transcription }}</span>
