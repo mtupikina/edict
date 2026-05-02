@@ -38,6 +38,8 @@
     "@angular/forms": "^20.3.0",
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
+    "@ng-icons/core": "^32.5.0",
+    "@ng-icons/lucide": "^32.5.0",
     "@ngzard/ui": "^1.0.0-beta.31",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",

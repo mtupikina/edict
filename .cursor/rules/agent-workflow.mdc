@@ -1,0 +1,34 @@
+---
+description: Mandatory agent workflow for every edit in this Angular app (rules first, reporting, verification)
+alwaysApply: true
+---
+
+# Agent workflow (edict)
+
+**These steps override speed or brevity.** Follow workspace `.cursor/rules/apply-project-rules.mdc` and this file together.
+
+## Before the first code edit in this repo (each task or fresh context)
+
+1. Read **workspace root** `.cursor/rules/` (at least `apply-project-rules.mdc`, `two-separate-repos.mdc`).
+2. Read **every** `edict/.cursor/rules/*.mdc` that applies (open the files; do not assume from memory).
+
+## In the first substantive reply where you change or propose code
+
+Include a **Rules read** list: every rule file from (1) and (2) you actually read (path + filename).
+
+## While working in `edict/`
+
+- Obey all `edict/.cursor/rules/` (Angular templates, component tests, lint, coverage/commit gate, lean components, Tailwind, etc.).
+- **New or renamed `*.component.ts`:** add or update **`*.component.spec.ts` in the same folder** in the same change set.
+
+## Before you tell the user the task is done
+
+From **`edict/`** (not the workspace root):
+
+1. Run **`npm run lint`** (or `ng lint`). Fix all issues.
+2. If you touched **components or meaningful logic:** run **`npm run test:ci`** or **`npm run test`** as appropriate; for broader changes run **`npm run coverage`** when rules require it. State which commands you ran.
+3. Confirm no **`.component.ts`** was added without a co-located **`.component.spec.ts`**.
+
+## Git
+
+Never run `git` from the workspace root. Use `edict/` for this app. See `two-separate-repos.mdc`.
