@@ -1,4 +1,10 @@
-import { DEFAULT_FORM_VALUE, formValueToPayload, wordToFormValue, WordFormValue } from './word-form.utils';
+import {
+  DEFAULT_FORM_VALUE,
+  formValueToPayload,
+  wordFormValuesEqual,
+  wordToFormValue,
+  WordFormValue,
+} from './word-form.utils';
 import { Word } from '../models/word.model';
 
 describe('word-form.utils', () => {
@@ -34,6 +40,19 @@ describe('word-form.utils', () => {
       expect(v.translation).toBe('');
       expect(v.partOfSpeech).toBe('');
       expect(v.synonymsText).toBe('');
+    });
+  });
+
+  describe('wordFormValuesEqual', () => {
+    it('should return true for identical values', () => {
+      const a: WordFormValue = { ...DEFAULT_FORM_VALUE, word: 'test', translation: 'x' };
+      expect(wordFormValuesEqual(a, { ...a })).toBe(true);
+    });
+
+    it('should return false when any field differs', () => {
+      const a: WordFormValue = { ...DEFAULT_FORM_VALUE, word: 'a' };
+      const b: WordFormValue = { ...DEFAULT_FORM_VALUE, word: 'b' };
+      expect(wordFormValuesEqual(a, b)).toBe(false);
     });
   });
 

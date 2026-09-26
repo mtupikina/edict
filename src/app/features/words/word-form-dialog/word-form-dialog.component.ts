@@ -1,12 +1,16 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   Component,
   DestroyRef,
   effect,
   ElementRef,
+  HostListener,
   inject,
   input,
   output,
+  PLATFORM_ID,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -29,6 +33,7 @@ import {
   aiEnrichedDataToFormValue,
   DEFAULT_FORM_VALUE,
   formValueToPayload,
+  wordFormValuesEqual,
   wordToFormValue,
   WordFormControls,
   WordFormValue,
@@ -52,6 +57,14 @@ export class WordFormDialogComponent {
   private readonly wordsService = inject(WordsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
+  private readonly platformId = inject(PLATFORM_ID);
+
+  private static readonly HISTORY_STATE_KEY = 'wordFormDialog';
+
+  /** Snapshot used to detect unsaved edits (add or edit). */
+  private baselineFormValue: WordFormValue = { ...DEFAULT_FORM_VALUE };
+  private historyGuardActive = false;
+  private suppressPopstate = false;
 
   word = input<Word | null>(null);
   saved = output<Word>();
@@ -72,6 +85,10 @@ export class WordFormDialogComponent {
   protected error = signal<string | null>(null);
   /** Up to 7 existing words matching the word input (for duplicate hint). Empty when no search or no matches. */
   protected searchHints = signal<Word[]>([]);
+  /** Inline prompt when closing with unsaved edits (same modal, no stacked dialog). */
+  protected showDiscardConfirm = signal(false);
+  private pendingCloseOnConfirm: (() => void) | null = null;
+  private pendingCloseOnCancel: (() => void) | null = null;
   /** True after the user has focused the word input; prevents search from firing on dialog open (e.g. edit mode patch). */
   private wordInputTouched = signal(false);
   private clearHintsTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -113,6 +130,7 @@ export class WordFormDialogComponent {
   constructor() {
     this.destroyRef.onDestroy(() => {
       if (this.clearHintsTimeoutId != null) clearTimeout(this.clearHintsTimeoutId);
+      if (this.historyGuardActive) this.disableHistoryGuard();
     });
     let lastSyncedId: string | null = null;
     effect(() => {
@@ -121,8 +139,22 @@ export class WordFormDialogComponent {
       if (currentId !== lastSyncedId) {
         lastSyncedId = currentId;
         this.wordInputTouched.set(false);
-        if (w) this.form.patchValue(wordToFormValue(w));
+        if (w) {
+          this.form.patchValue(wordToFormValue(w));
+          this.setBaselineFromCurrentForm();
+        }
       }
+    });
+
+    effect(() => {
+      const open = this.isDialogOpen();
+      untracked(() => {
+        if (open) {
+          this.enableHistoryGuard();
+        } else if (this.historyGuardActive) {
+          this.disableHistoryGuard();
+        }
+      });
     });
 
     this.form
@@ -181,7 +213,9 @@ export class WordFormDialogComponent {
   }
 
   protected openAdd(): void {
+    this.clearDiscardConfirmState();
     this.form.reset(DEFAULT_FORM_VALUE);
+    this.setBaselineFromCurrentForm();
     this.error.set(null);
     this.searchHints.set([]);
     this.wordInputTouched.set(false);
@@ -238,9 +272,111 @@ export class WordFormDialogComponent {
       });
   }
 
+  protected requestClose(): void {
+    this.attemptClose(() => this.performClose());
+  }
+
+  protected onBackdropClick(): void {
+    if (this.showDiscardConfirm()) {
+      this.dismissDiscardConfirm();
+      return;
+    }
+    this.requestClose();
+  }
+
+  protected onDialogEscape(event: Event): void {
+    if (this.showDiscardConfirm()) {
+      this.dismissDiscardConfirm();
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    this.requestClose();
+  }
+
+  protected confirmDiscard(): void {
+    const onConfirm = this.pendingCloseOnConfirm;
+    this.clearDiscardConfirmState();
+    onConfirm?.();
+  }
+
+  protected dismissDiscardConfirm(): void {
+    this.pendingCloseOnCancel?.();
+    this.clearDiscardConfirmState();
+  }
+
+  private clearDiscardConfirmState(): void {
+    this.pendingCloseOnCancel = null;
+    this.pendingCloseOnConfirm = null;
+    this.showDiscardConfirm.set(false);
+  }
+
   protected close(): void {
+    this.requestClose();
+  }
+
+  @HostListener('window:popstate')
+  protected onPopState(): void {
+    if (this.suppressPopstate) {
+      this.suppressPopstate = false;
+      return;
+    }
+    if (!this.historyGuardActive || !this.isDialogOpen()) {
+      return;
+    }
+    this.historyGuardActive = false;
+    this.attemptClose(
+      () => this.performClose(),
+      () => this.enableHistoryGuard(),
+    );
+  }
+
+  private isDialogOpen(): boolean {
+    return !!(this.word() || this.showAddForm());
+  }
+
+  private hasUnsavedChanges(): boolean {
+    return !wordFormValuesEqual(this.form.getRawValue(), this.baselineFormValue);
+  }
+
+  private setBaselineFromCurrentForm(): void {
+    this.baselineFormValue = { ...this.form.getRawValue() };
+  }
+
+  private attemptClose(onConfirm: () => void, onCancel?: () => void): void {
+    if (!this.hasUnsavedChanges()) {
+      onConfirm();
+      return;
+    }
+    if (this.showDiscardConfirm()) {
+      return;
+    }
+    this.pendingCloseOnConfirm = onConfirm;
+    this.pendingCloseOnCancel = onCancel ?? null;
+    this.showDiscardConfirm.set(true);
+  }
+
+  private performClose(): void {
+    this.clearDiscardConfirmState();
     this.showAddForm.set(false);
     this.dialogCancel.emit();
+  }
+
+  private enableHistoryGuard(): void {
+    if (!isPlatformBrowser(this.platformId) || this.historyGuardActive) {
+      return;
+    }
+    history.pushState({ [WordFormDialogComponent.HISTORY_STATE_KEY]: true }, '');
+    this.historyGuardActive = true;
+  }
+
+  private disableHistoryGuard(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.historyGuardActive) {
+      return;
+    }
+    this.suppressPopstate = true;
+    this.historyGuardActive = false;
+    history.back();
   }
 
   /** Done button in add mode: save current word if form is valid, then close. If invalid, show validation and do not close. */
@@ -262,6 +398,7 @@ export class WordFormDialogComponent {
   /** Reset form and state so the user can add another word (after a successful create). */
   private resetFormForAddAnother(): void {
     this.form.reset(DEFAULT_FORM_VALUE);
+    this.setBaselineFromCurrentForm();
     this.error.set(null);
     this.searchHints.set([]);
     this.focusWordInput();
