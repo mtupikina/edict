@@ -92,6 +92,11 @@ export function aiEnrichedDataToFormValue(data: AiEnrichedWordData): WordFormVal
   };
 }
 
+/** True when every form field matches the saved baseline (add or edit). */
+export function wordFormValuesEqual(a: WordFormValue, b: WordFormValue): boolean {
+  return (Object.keys(DEFAULT_FORM_VALUE) as (keyof WordFormValue)[]).every((key) => a[key] === b[key]);
+}
+
 export function formValueToPayload(raw: WordFormValue): Partial<Word> {
   return {
     word: raw.word.trim(),

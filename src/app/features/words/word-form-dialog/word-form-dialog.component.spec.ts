@@ -17,6 +17,9 @@ interface WordFormDialogTestHarness {
   openAdd(): void;
   onWordInputFocus(): void;
   close(): void;
+  confirmDiscard(): void;
+  dismissDiscardConfirm(): void;
+  showDiscardConfirm: Signal<boolean>;
   save(): void;
   getControlError(controlName: keyof WordFormValue): string | null;
   showPluralField: boolean;
@@ -30,7 +33,6 @@ function harness(instance: WordFormDialogComponent): WordFormDialogTestHarness {
 describe('WordFormDialogComponent', () => {
   let fixture: ComponentFixture<WordFormDialogComponent>;
   let wordsService: jasmine.SpyObj<WordsService>;
-
   beforeEach(async () => {
     wordsService = jasmine.createSpyObj('WordsService', ['create', 'update', 'getPage']);
     wordsService.create.and.returnValue(of({ _id: '1', word: 'new' } as Word));
@@ -124,6 +126,25 @@ describe('WordFormDialogComponent', () => {
     harness(fixture.componentInstance).close();
     expect(harness(fixture.componentInstance).showAddForm()).toBe(false);
     expect(cancelled).toBe(true);
+  });
+
+  it('close with unsaved changes should show inline discard confirm and stay open until discard', () => {
+    harness(fixture.componentInstance).openAdd();
+    harness(fixture.componentInstance).form.patchValue({ word: 'draft' });
+    harness(fixture.componentInstance).close();
+    expect(harness(fixture.componentInstance).showDiscardConfirm()).toBe(true);
+    expect(harness(fixture.componentInstance).showAddForm()).toBe(true);
+    harness(fixture.componentInstance).confirmDiscard();
+    expect(harness(fixture.componentInstance).showAddForm()).toBe(false);
+  });
+
+  it('close with unsaved changes should stay open when user keeps editing', () => {
+    harness(fixture.componentInstance).openAdd();
+    harness(fixture.componentInstance).form.patchValue({ word: 'draft' });
+    harness(fixture.componentInstance).close();
+    harness(fixture.componentInstance).dismissDiscardConfirm();
+    expect(harness(fixture.componentInstance).showDiscardConfirm()).toBe(false);
+    expect(harness(fixture.componentInstance).showAddForm()).toBe(true);
   });
 
   it('save with invalid form should markAllAsTouched', () => {

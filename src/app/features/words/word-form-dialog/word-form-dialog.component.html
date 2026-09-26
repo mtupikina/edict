@@ -6,8 +6,8 @@
 } @else if (word() || showAddForm()) {
   <div
     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
-    (click)="close()"
-    (keydown.escape)="close()"
+    (click)="onBackdropClick()"
+    (keydown.escape)="onDialogEscape($event)"
     role="dialog"
     tabindex="-1"
     aria-modal="true"
@@ -21,6 +21,41 @@
     >
       <div class="dialog-scroll h-full max-h-[90vh] overflow-y-auto p-6 [scrollbar-gutter:stable]">
         <h2 class="text-xl font-semibold text-slate-800 mb-4" data-testid="word-dialog-title">{{ word() ? 'Edit word' : 'Add word' }}</h2>
+
+        @if (showDiscardConfirm()) {
+          <div
+            class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4"
+            role="alert"
+            data-testid="word-form-discard-confirm"
+          >
+            <p class="text-sm font-medium text-amber-950">Discard unsaved changes?</p>
+            <p class="text-sm text-amber-900/80 mt-1">
+              You have unsaved changes. If you leave now, your changes will be lost.
+            </p>
+            <div class="flex flex-wrap gap-2 justify-end mt-3">
+              <button
+                z-button
+                type="button"
+                zType="outline"
+                class="min-h-9"
+                data-testid="word-form-discard-keep-editing"
+                (click)="dismissDiscardConfirm()"
+              >
+                Keep editing
+              </button>
+              <button
+                z-button
+                type="button"
+                zType="destructive"
+                class="min-h-9"
+                data-testid="word-form-discard-confirm"
+                (click)="confirmDiscard()"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        }
 
         <form [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
           @if (error()) {
@@ -155,7 +190,7 @@
             </div>
           }
           <div class="flex flex-wrap gap-2 justify-end pt-2">
-            <button z-button type="button" (click)="close()" zType="outline" class="min-h-9 min-w-[5.5rem]">Cancel</button>
+            <button z-button type="button" (click)="requestClose()" zType="outline" class="min-h-9 min-w-[5.5rem]">Cancel</button>
             @if (!word()) {
               <button z-button type="button" (click)="onDoneClick($event)" class="min-h-9 min-w-[5.5rem]">Done</button>
             }
