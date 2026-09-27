@@ -71,6 +71,9 @@ export class WordFormDialogComponent {
   dialogCancel = output<void>();
 
   private readonly wordInputRef = viewChild('wordInputRef', { read: ElementRef<HTMLInputElement> });
+  private readonly discardConfirmButtonRef = viewChild('discardConfirmButtonRef', {
+    read: ElementRef<HTMLButtonElement>,
+  });
 
   protected readonly partOfSpeechSelectItems = PART_OF_SPEECH_SELECT_ORDER.map(value => ({
     value,
@@ -155,6 +158,12 @@ export class WordFormDialogComponent {
           this.disableHistoryGuard();
         }
       });
+    });
+
+    effect(() => {
+      if (this.showDiscardConfirm()) {
+        untracked(() => this.focusDiscardConfirmButton());
+      }
     });
 
     this.form
@@ -349,6 +358,7 @@ export class WordFormDialogComponent {
       return;
     }
     if (this.showDiscardConfirm()) {
+      this.focusDiscardConfirmButton();
       return;
     }
     this.pendingCloseOnConfirm = onConfirm;
@@ -450,6 +460,10 @@ export class WordFormDialogComponent {
 
   protected focusWordInput(): void {
     setTimeout(() => this.wordInputRef()?.nativeElement?.focus(), 0);
+  }
+
+  private focusDiscardConfirmButton(): void {
+    setTimeout(() => this.discardConfirmButtonRef()?.nativeElement?.focus(), 0);
   }
 
   private getApiErrorMessage(err: {

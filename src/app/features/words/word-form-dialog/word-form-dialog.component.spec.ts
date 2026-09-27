@@ -147,6 +147,32 @@ describe('WordFormDialogComponent', () => {
     expect(harness(fixture.componentInstance).showAddForm()).toBe(true);
   });
 
+  it('discard confirm should focus Discard when shown and when Cancel is clicked again', fakeAsync(() => {
+    harness(fixture.componentInstance).openAdd();
+    fixture.detectChanges();
+    harness(fixture.componentInstance).form.patchValue({ word: 'draft' });
+    harness(fixture.componentInstance).close();
+    fixture.detectChanges();
+    tick();
+    const discardBtn = fixture.nativeElement.querySelector(
+      'button[data-testid="word-form-discard-confirm"]',
+    ) as HTMLButtonElement;
+    expect(discardBtn).toBeTruthy();
+    expect(document.activeElement).toBe(discardBtn);
+
+    const cancelButtons = fixture.nativeElement.querySelectorAll(
+      'button[zType="outline"]',
+    ) as NodeListOf<HTMLButtonElement>;
+    const formCancel = Array.from(cancelButtons).find((b) => b.textContent?.trim() === 'Cancel');
+    expect(formCancel).toBeTruthy();
+    formCancel!.focus();
+    formCancel!.click();
+    fixture.detectChanges();
+    tick();
+    expect(harness(fixture.componentInstance).showDiscardConfirm()).toBe(true);
+    expect(document.activeElement).toBe(discardBtn);
+  }));
+
   it('save with invalid form should markAllAsTouched', () => {
     harness(fixture.componentInstance).openAdd();
     harness(fixture.componentInstance).save();
